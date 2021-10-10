@@ -1,24 +1,20 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-
+import React from "react";
+import "./App.css";
+import Sidenav from "./Compoments/Sidenav";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import ShopInfo from "./Compoments/ShopInfo";
+import Products from "./Compoments/Products";
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Router>
+        <Sidenav>
+          <Switch>
+            <Route exact path="/" component={ShopInfo} />
+            <Route path="/products" component={Products} />
+          </Switch>
+        </Sidenav>
+      </Router>
     </div>
   );
 }

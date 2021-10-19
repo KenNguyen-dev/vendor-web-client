@@ -26,6 +26,14 @@ export const orders = () => {
   };
 };
 
+export const discounts = () => {
+  return (dispatch: Dispatch<TitleAction>) => {
+    dispatch({
+      type: TitleTypes.DISCOUNTS,
+    });
+  };
+};
+
 export const reviews = () => {
   return (dispatch: Dispatch<TitleAction>) => {
     dispatch({

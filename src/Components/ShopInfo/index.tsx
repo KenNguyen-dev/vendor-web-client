@@ -11,12 +11,13 @@ import StorefrontIcon from "@mui/icons-material/Storefront"; //just for testing
 const ShopInfo = () => {
   const initialValues = {
     id: "",
-    storeName: "Default Store Name",
+    name: "Default Store Name",
     email: "Default Email",
     hotline: "Default Hotline",
     ownerID: "",
-    status: "Default Status",
+    isActive: "Default Status",
     desc: "Default Desc",
+    logoUrl: "",
   };
 
   const [values, setValues] = useState(initialValues);
@@ -43,7 +44,7 @@ const ShopInfo = () => {
             <Grid item xs container direction="column" spacing={2}>
               <Grid item xs>
                 <Typography gutterBottom variant="subtitle1" component="div">
-                  {values.storeName}
+                  {values.name}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
                   {values.email}
@@ -67,7 +68,7 @@ const ShopInfo = () => {
             </Grid>
             <Grid item>
               <Typography variant="subtitle1" component="div">
-                {values.status}
+                {values.isActive}
               </Typography>
             </Grid>
           </Grid>
@@ -84,7 +85,7 @@ const ShopInfo = () => {
           <TextField
             size="small"
             label="Tên cửa hàng"
-            name="storeName"
+            name="name"
             onChange={handleInputChanges}
           />
         </Grid>
@@ -118,7 +119,7 @@ const ShopInfo = () => {
           <TextField
             size="small"
             label="Tình Trạng"
-            name="status"
+            name="isActive"
             onChange={handleInputChanges}
           />
         </Grid>

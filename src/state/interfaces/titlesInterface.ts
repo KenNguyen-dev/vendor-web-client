@@ -20,4 +20,14 @@ interface Analytics {
   type: TitleTypes.ANALYTICS;
 }
 
-export type TitleAction = ShopInfo | Products | Orders | Reviews | Analytics;
+interface Discounts {
+  type: TitleTypes.DISCOUNTS;
+}
+
+export type TitleAction =
+  | ShopInfo
+  | Products
+  | Orders
+  | Reviews
+  | Analytics
+  | Discounts;

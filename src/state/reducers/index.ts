@@ -1,7 +1,9 @@
 import { combineReducers } from "redux";
 import titleReducer from "./titleReducer";
+import orderDialogReducer from "./orderDialogReducer";
 
 const reducers = combineReducers({
+  dialog: orderDialogReducer,
   title: titleReducer,
 });
 

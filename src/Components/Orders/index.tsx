@@ -1,17 +1,23 @@
-import React, { useState, Fragment } from "react";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Collapse from "@mui/material/Collapse";
-import IconButton from "@mui/material/IconButton";
+import React, { useState, Fragment, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Collapse,
+  IconButton,
+  Button,
+  TablePagination,
+  Menu,
+  MenuItem,
+  Box,
+} from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircleIcon from "@mui/icons-material/Circle";
 import { red } from "@mui/material/colors";
@@ -21,16 +27,12 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 // import "./index.css";
 import { useTheme } from "@mui/material/styles";
-import Button from "@mui/material/Button";
 import IOrders, { OrderState } from "./interfaces";
-import TablePagination from "@mui/material/TablePagination";
 import { useDispatch } from "react-redux";
 import { bindActionCreators } from "redux";
 import { dialogAction } from "../../state/index";
-import OrderDialog from "../OrderDialog";
+import OrderDialog from "../Dialog/OrderDialog";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
 const deleteButtonStyle: CSS.Properties = {
@@ -93,12 +95,14 @@ const Row = (props: { row: IOrders }) => {
   const [customerOpen, setCustomerOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
-  const [page, setPage] = React.useState(0);
+  const [page, setPage] = useState(0);
+  const [status, setStatus] = useState(row.state);
+  const [buttonColor, setButtonColor] = useState<any>("primary");
 
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
   };
-
+  const rowsPerPage = 3;
   const dispatch = useDispatch();
   const { openDialog } = bindActionCreators(dialogAction, dispatch);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -108,6 +112,24 @@ const Row = (props: { row: IOrders }) => {
   };
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (e: any) => {
+    switch (e.target.textContent) {
+      case "APPROVED":
+        setStatus(OrderState.APPROVED);
+        setButtonColor("secondary");
+        setAnchorEl(null);
+        break;
+      case "COMPLETED":
+        setStatus(OrderState.COMPLETE);
+        setButtonColor("success");
+        setAnchorEl(null);
+        break;
+      default:
+        setStatus(OrderState.CREATED);
+        break;
+    }
   };
 
   const dropdownMenu = (
@@ -120,8 +142,8 @@ const Row = (props: { row: IOrders }) => {
         "aria-labelledby": "basic-button",
       }}
     >
-      <MenuItem>APPROVED</MenuItem>
-      <MenuItem>COMPLETED</MenuItem>
+      <MenuItem onClick={(e) => handleMenuItemClick(e)}>APPROVED</MenuItem>
+      <MenuItem onClick={(e) => handleMenuItemClick(e)}>COMPLETED</MenuItem>
     </Menu>
   );
 
@@ -157,8 +179,12 @@ const Row = (props: { row: IOrders }) => {
           </IconButton>
         </TableCell>
         <TableCell>
-          <Button variant="contained" onClick={(e) => handleClick(e)}>
-            CREATED <ExpandMore />
+          <Button
+            color={buttonColor}
+            variant="contained"
+            onClick={(e) => handleClick(e)}
+          >
+            {status} <ExpandMore />
           </Button>
           {dropdownMenu}
         </TableCell>
@@ -192,34 +218,36 @@ const Row = (props: { row: IOrders }) => {
                   <TableCell>Xóa</TableCell>
                 </TableHead>
                 <TableBody>
-                  {row.items.slice(page * 3, page * 3 + 3).map((item) => {
-                    return (
-                      <TableRow>
-                        <TableCell>{item.id}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>
-                          {item.price.amount}/{item.price.unit}
-                        </TableCell>
-                        <TableCell>
-                          {item.totalPrice.amount}/{item.totalPrice.unit}
-                        </TableCell>
-                        <TableCell>{item.vendorName}</TableCell>
-                        <TableCell>{item.imageUrl}</TableCell>
-                        <TableCell>
-                          <IconButton>
-                            <DeleteForeverIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {row.items
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((item) => {
+                      return (
+                        <TableRow>
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>
+                            {item.price.amount}/{item.price.unit}
+                          </TableCell>
+                          <TableCell>
+                            {item.totalPrice.amount}/{item.totalPrice.unit}
+                          </TableCell>
+                          <TableCell>{item.vendorName}</TableCell>
+                          <TableCell>{item.imageUrl}</TableCell>
+                          <TableCell>
+                            <IconButton>
+                              <DeleteForeverIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                 </TableBody>
                 <TableRow>
                   <TablePagination
-                    rowsPerPageOptions={[3]}
+                    rowsPerPageOptions={[rowsPerPage]}
                     count={row.items.length}
-                    rowsPerPage={3}
+                    rowsPerPage={rowsPerPage}
                     page={page}
                     SelectProps={{
                       inputProps: {
@@ -275,7 +303,7 @@ const Orders = () => {
         details: "Detail",
       },
       notes: "This is note",
-      state: OrderState.APPROVED,
+      state: OrderState.CREATED,
       createdAt: new Date(2021, 10, 27),
       updatedAt: new Date(2021, 10, 27),
       deletedAt: new Date(2021, 10, 27),
@@ -373,7 +401,7 @@ const Orders = () => {
         details: "Detail",
       },
       notes: "This is note",
-      state: OrderState.APPROVED,
+      state: OrderState.CREATED,
       createdAt: new Date(2021, 10, 27),
       updatedAt: new Date(2021, 10, 27),
       deletedAt: new Date(2021, 10, 27),

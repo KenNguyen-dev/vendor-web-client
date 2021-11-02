@@ -1,6 +1,17 @@
-#productStatus {
-  display: inline;
-  font-size: 15px;
+#arrowDown {
+  position: relative;
+  animation-name: arrowPointDown;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+}
+
+@keyframes arrowPointDown {
+  0% {
+    top: -5px;
+  }
+  100% {
+    top: 5px;
+  }
 }
 
 #outerBorder {

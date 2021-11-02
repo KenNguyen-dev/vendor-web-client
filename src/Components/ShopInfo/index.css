@@ -13,3 +13,13 @@
 .textInput {
   text-align: left;
 }
+
+.vendorCard {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.vendorCard:hover {
+  transform: scale(1.025);
+  transition-timing-function: ease-in-out;
+}

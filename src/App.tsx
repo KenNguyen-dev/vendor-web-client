@@ -10,6 +10,7 @@ import Login from "./Components/Login";
 import Welcome from "./Components/Welcome";
 import Orders from "./Components/Orders";
 import Discounts from "./Components/Discounts";
+import Review from "./Components/Review";
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -40,6 +41,7 @@ function App() {
               <Route path="/products" component={Products} />
               <Route path="/orders" component={Orders} />
               <Route path="/discounts" component={Discounts} />
+              <Route path="/reviews" component={Review} />
             </Switch>
           </Sidenav>
         ) : (

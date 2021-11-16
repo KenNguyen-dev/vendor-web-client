@@ -18,6 +18,9 @@ import {
   Paper,
   ThemeProvider,
   createTheme,
+  Button,
+  CircularProgress,
+  ListItemButton,
 } from "@mui/material";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import RateReviewIcon from "@mui/icons-material/RateReview";
@@ -30,6 +33,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import MoneyIcon from "@mui/icons-material/Money";
 import AccountCircle from "@mui/icons-material/AccountCircle";
+import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
 import { useDispatch, useSelector } from "react-redux";
 import { bindActionCreators } from "redux";
 import { State } from "../../state/reducers";
@@ -70,24 +74,41 @@ const GrandchildRow = (props: { row: any }) => {
 const ChildRow = (props: { row: any }) => {
   const { row } = props;
   const [open, setOpen] = useState(false);
+  const history = useHistory();
+  const dispatch = useDispatch();
+  const { products } = bindActionCreators(titlesAction, dispatch);
 
+  const productsClick = () => {
+    products();
+    history.push({ pathname: "/products", state: { row } });
+  };
   return (
     <Fragment>
       <List component="div" disablePadding sx={{ pl: 1 }}>
-        <ListItem button onClick={() => setOpen(!open)}>
-          <ListItemIcon sx={{ minWidth: 40 }}>
-            <ChangeHistoryIcon />
-          </ListItemIcon>
-          <ListItemText primary={row.name} />
-          {open ? <ExpandLess /> : <ExpandMore />}
+        <ListItem
+          secondaryAction={
+            open ? (
+              <IconButton onClick={() => setOpen(!open)} edge="end">
+                <ExpandLess />
+              </IconButton>
+            ) : (
+              <IconButton onClick={() => setOpen(!open)} edge="end">
+                <ExpandMore />
+              </IconButton>
+            )
+          }
+        >
+          <ListItemButton onClick={() => productsClick()}>
+            <ListItemText primary={row.name} />
+          </ListItemButton>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            {row.children.map((child: any) => (
+              <Fragment>
+                <GrandchildRow row={child} />
+              </Fragment>
+            ))}
+          </Collapse>
         </ListItem>
-        <Collapse in={open} timeout="auto" unmountOnExit>
-          {row.children.map((child: any) => (
-            <Fragment>
-              <GrandchildRow row={child} />
-            </Fragment>
-          ))}
-        </Collapse>
       </List>
     </Fragment>
   );
@@ -96,16 +117,33 @@ const ChildRow = (props: { row: any }) => {
 const ParentRow = (props: { row: any }) => {
   const { row } = props;
   const [open, setOpen] = useState(false);
+  const history = useHistory();
+  const dispatch = useDispatch();
+  const { products } = bindActionCreators(titlesAction, dispatch);
 
+  const productsClick = () => {
+    products();
+    history.push({ pathname: "/products", state: { row } });
+  };
   return (
     <Fragment>
       <List component="div" disablePadding>
-        <ListItem button onClick={() => setOpen(!open)}>
-          <ListItemIcon sx={{ minWidth: 40 }}>
-            <CropSquareIcon />
-          </ListItemIcon>
-          <ListItemText primary={row.name} />
-          {open ? <ExpandLess /> : <ExpandMore />}
+        <ListItem
+          secondaryAction={
+            open ? (
+              <IconButton onClick={() => setOpen(!open)} edge="end">
+                <ExpandLess />
+              </IconButton>
+            ) : (
+              <IconButton onClick={() => setOpen(!open)} edge="end">
+                <ExpandMore />
+              </IconButton>
+            )
+          }
+        >
+          <ListItemButton onClick={() => productsClick()}>
+            <ListItemText primary={row.name} />
+          </ListItemButton>
         </ListItem>
         <Collapse in={open} timeout="auto" unmountOnExit>
           {row.children.map((child: any) => (
@@ -123,78 +161,26 @@ const drawerWidth = 250;
 const Sidenav = (props: any) => {
   const { user, logout } = useAuth0();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [categories, setCategories] = useState([]);
-
-  const getCategories = async () => {
-    const response = await axios.get(CATEGORIES_URL);
-    const data = response.data;
-    setCategories(data);
-  };
-
-  useEffect(() => {
-    getCategories();
-  }, []);
-
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const history = useHistory();
   const [mobileOpen, setMobileOpen] = useState(false);
   const dispatch = useDispatch();
   const { shopInfo, reviews, orders, discounts, analytics } =
     bindActionCreators(titlesAction, dispatch);
 
-  const title = useSelector((state: State) => state.title);
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const getCategories = async () => {
+    try {
+      const response = await axios.get(`${CATEGORIES_URL}`);
+      const data = response.data;
+      setCategories(data);
+      setLoading(false);
+    } catch {
+      console.log("error");
+    }
   };
 
-  const shopInfoClick = () => {
-    shopInfo();
-    history.push("/shopinfo");
-  };
-
-  const reviewsClick = () => {
-    reviews();
-    history.push("/reviews");
-  };
-
-  const ordersClick = () => {
-    orders();
-    history.push("/orders");
-  };
-  const discountsClick = () => {
-    discounts();
-    history.push("/discounts");
-  };
-
-  const analyticsClick = () => {
-    analytics();
-  };
-
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(e.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const dropdownMenu = (
-    <Menu
-      id="basic-menu"
-      anchorEl={anchorEl}
-      open={open}
-      onClose={handleClose}
-      MenuListProps={{
-        "aria-labelledby": "basic-button",
-      }}
-    >
-      <MenuItem>{user?.name}</MenuItem>
-      <Divider />
-      <MenuItem onClick={() => logout()}>Logout</MenuItem>
-    </Menu>
-  );
-
-  const drawer = (
+  const SideNavBar = (
     <div>
       <h1>eShop</h1>
       <Divider />
@@ -280,6 +266,63 @@ const Sidenav = (props: any) => {
     </div>
   );
 
+  useEffect(() => {
+    getCategories();
+  }, []);
+
+  const title = useSelector((state: State) => state.title);
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const shopInfoClick = () => {
+    shopInfo();
+    history.push("/shopinfo");
+  };
+
+  const reviewsClick = () => {
+    reviews();
+    history.push("/reviews");
+  };
+
+  const ordersClick = () => {
+    orders();
+    history.push("/orders");
+  };
+  const discountsClick = () => {
+    discounts();
+    history.push("/discounts");
+  };
+
+  const analyticsClick = () => {
+    analytics();
+  };
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(e.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const dropdownMenu = (
+    <Menu
+      id="basic-menu"
+      anchorEl={anchorEl}
+      open={open}
+      onClose={handleClose}
+      MenuListProps={{
+        "aria-labelledby": "basic-button",
+      }}
+    >
+      <MenuItem>{user?.name}</MenuItem>
+      <Divider />
+      <MenuItem onClick={() => logout()}>Logout</MenuItem>
+    </Menu>
+  );
+
   return (
     <div>
       <Box sx={{ display: "flex" }}>
@@ -336,7 +379,7 @@ const Sidenav = (props: any) => {
               },
             }}
           >
-            {drawer}
+            {loading ? <CircularProgress /> : SideNavBar}
           </Drawer>
           <Drawer
             variant="permanent"
@@ -349,7 +392,7 @@ const Sidenav = (props: any) => {
             }}
             open
           >
-            {drawer}
+            {loading ? <CircularProgress /> : SideNavBar}
           </Drawer>
         </Box>
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>

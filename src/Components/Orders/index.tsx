@@ -14,6 +14,9 @@ import {
   Menu,
   MenuItem,
   Box,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -25,15 +28,18 @@ import Grid from "@mui/material/Grid";
 import CSS from "csstype";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-// import "./index.css";
+import OrderDialog from "../Dialog/OrderDialog";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+
 import { useTheme } from "@mui/material/styles";
 import IOrders, { OrderState } from "./interfaces";
 import { useDispatch } from "react-redux";
 import { bindActionCreators } from "redux";
 import { dialogAction } from "../../state/index";
-import OrderDialog from "../Dialog/OrderDialog";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import { State } from "../../state/reducers";
 
 const deleteButtonStyle: CSS.Properties = {
   fontSize: "1.5vmin",
@@ -285,6 +291,11 @@ const Row = (props: { row: IOrders }) => {
 //#endregion
 
 const Orders = () => {
+  const vendor: any = useSelector((state: State) => state.vendor);
+  const [vendorList, setVendorList] = useState<any>([]);
+  const [vendorSelected, setvendorSelected] = useState<any>();
+  const [orders, setOrders] = useState<any>([]);
+
   //đây là data mẫu
   const rows: IOrders[] = [
     {
@@ -485,10 +496,44 @@ const Orders = () => {
     },
   ];
 
+  const getVendorInfo = () => {
+    setVendorList(vendor);
+  };
+
+  useEffect(() => {
+    getVendorInfo();
+  }, []);
+
+  // useEffect(() => {
+  //   getOrderList();
+  // }, [vendorSelected]);
+
+  const handleVendorChange = (e: any) => {
+    setvendorSelected(e.target.value);
+  };
+
   const darkTheme = createTheme({ palette: { mode: "dark" } });
   return (
     <div id="header">
       <strong>Danh sách orders:</strong>
+      <div id="body">
+        <p>
+          Vui lòng chọn Vendor:
+          <FormControl sx={{ width: 200 }} size="small">
+            <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              label="Vendor"
+              onChange={(e: any) => handleVendorChange(e)}
+            >
+              {vendorList.map((vendor: any) => (
+                <MenuItem value={vendor.id}>{vendor.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </p>
+      </div>
       <ThemeProvider theme={darkTheme}>
         <OrderDialog />
         <TableContainer component={Paper} elevation={10}>

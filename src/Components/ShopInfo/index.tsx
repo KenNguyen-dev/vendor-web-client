@@ -6,15 +6,13 @@ import {
   TextareaAutosize,
   Button,
   Paper,
-  Backdrop,
-  CircularProgress,
 } from "@mui/material";
 import "./index.css";
-import StorefrontIcon from "@mui/icons-material/Storefront"; //just for testing
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OfflineBoltIcon from "@mui/icons-material/OfflineBolt";
+import { useSelector } from "react-redux";
+import { State } from "../../state/reducers";
 import { VENDOR_URL } from "../../url";
-import { useAuth0 } from "@auth0/auth0-react";
 import axios from "axios";
 
 const VendorList = (props: { vendors: any; selectedVendor: any }) => {
@@ -46,10 +44,19 @@ const VendorList = (props: { vendors: any; selectedVendor: any }) => {
         elevation={3}
       >
         <Grid container spacing={2}>
-          <Grid item xs={3} md={5}>
+          <Grid
+            item
+            xs={2}
+            md={4}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             {image(vendors.logoUrl)}
           </Grid>
-          <Grid item xs={9} md={7} container style={{ textAlign: "left" }}>
+          <Grid item xs={10} md={8} container style={{ textAlign: "left" }}>
             <Grid item xs container direction="column" spacing={2}>
               <Grid item xs>
                 <Typography gutterBottom variant="subtitle1" component="div">
@@ -80,8 +87,6 @@ const VendorList = (props: { vendors: any; selectedVendor: any }) => {
 };
 
 const ShopInfo = () => {
-  const { user } = useAuth0();
-
   const initialValues = {
     id: "",
     name: "",
@@ -92,14 +97,13 @@ const ShopInfo = () => {
     introduction: "",
     logoUrl: "",
   };
+  const vendor: any = useSelector((state: State) => state.vendor);
   const [values, setValues] = useState(initialValues);
   const [vendorList, setVendorList] = useState<typeof initialValues[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [enabled, setEnabled] = useState(true);
 
-  const getVendorInfo = async () => {
-    const response = await axios.get(`${VENDOR_URL}?ownerId=${user?.sub}`);
-    setVendorList(response.data);
-    setLoading(false);
+  const getVendorInfo = () => {
+    setVendorList(vendor);
   };
 
   useEffect(() => {
@@ -115,18 +119,30 @@ const ShopInfo = () => {
   };
 
   const vendorClick = (vendor: typeof initialValues) => {
-    console.log(vendor);
     setValues(vendor);
+    setEnabled(false);
+  };
+
+  //update vendor
+  const updateVendor = () => {
+    // axios.put(`${VENDOR_URL}/${values.id}`, values).then((res) => {
+    //   getVendorInfo();
+    //   setValues(initialValues);
+    //   setEnabled(true);
+    // });
+  };
+
+  //delete vendor
+  const deleteVendor = () => {
+    axios.delete(`${VENDOR_URL}/${values.id}`).then((res) => {
+      getVendorInfo();
+      setValues(initialValues);
+      setEnabled(true);
+    });
   };
 
   return (
     <div>
-      <Backdrop
-        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={loading}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}>
           {vendorList.map((vendor: any) => (
@@ -185,7 +201,13 @@ const ShopInfo = () => {
             </Grid>
             <Grid item xs={12} md={3}></Grid>
             <Grid item xs={12} md={9} className="textInput">
-              <Button variant="contained">Update</Button>
+              <Button
+                variant="contained"
+                disabled={enabled}
+                onClick={() => updateVendor()}
+              >
+                Update
+              </Button>
             </Grid>
           </Grid>
         </Grid>

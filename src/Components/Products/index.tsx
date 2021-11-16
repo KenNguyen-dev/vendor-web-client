@@ -15,6 +15,7 @@ import {
   Grid,
   Button,
   TableFooter,
+  Rating,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -27,7 +28,7 @@ import CSS from "csstype";
 import "./index.css";
 import axios from "axios";
 import { PRODUCTS_URL } from "../../url";
-import AddProductDialog from "../Dialog/AddProductDialog";
+import ProductDialog from "../Dialog/ProductDialog";
 
 interface IProducts {
   id: string;
@@ -56,22 +57,43 @@ const deleteButtonStyle: CSS.Properties = {
 };
 const updateButtonStyle = { ...deleteButtonStyle, marginRight: "1vw" };
 
-const Row = (props: { row: any }) => {
-  const { row } = props;
+const Row = (props: { row: any; categoryName: string }) => {
+  const { row, categoryName } = props;
   const [open, setOpen] = useState(false);
   const image = (url: string) => {
-    if (url == undefined || url == "")
+    try {
       return (
         <img
-          src="https://via.placeholder.com/150"
-          style={{ margin: "1px", width: 300, height: 175 }}
+          src={url}
+          style={{ margin: "1px", width: "20vw", height: "15vw" }}
         />
       );
-    return <img src={url} style={{ margin: "1px", width: 300, height: 175 }} />;
+    } catch {
+      <img
+        src="https://via.placeholder.com/150"
+        style={{ margin: "1px", width: 300, height: 175 }}
+      />;
+    }
+  };
+
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const updateProduct = () => {
+    setOpenDialog(!openDialog);
+  };
+
+  const closeDialog = () => {
+    setOpenDialog(!openDialog);
   };
 
   return (
     <Fragment>
+      <ProductDialog
+        open={openDialog}
+        closeDialog={closeDialog}
+        categoryName={categoryName}
+        categoryId={row.id}
+      />
       <TableRow key={row.id}>
         <TableCell>{row.name}</TableCell>
         <TableCell>
@@ -97,20 +119,21 @@ const Row = (props: { row: any }) => {
           <Collapse in={open} timeout="auto">
             <Box sx={{ margin: 1 }}>
               <div>
-                <div id="productStatus">ID: {row.id} </div>
+                <div style={{ fontSize: "10px", color: "gray" }}>
+                  ID: {row.id}
+                </div>
               </div>
               <br />
               <Grid container spacing={2} style={{ textAlign: "center" }}>
-                <Grid item xs={12} md={3}>
-                  {image(row.images[0].url)}
+                <Grid item xs={12} md={5}>
+                  {image(row.images[0]?.url)}
                 </Grid>
-                <Grid item xs={12} md={3}>
-                  {/* {logo(row.brand.logoUrl)}
-                    <p>Brand : {row.brand.name}</p>
-                    <p>ID : {row.brand.id}</p> */}
+                <Grid item xs={12} md={2}>
+                  <p>Lượt Review: {row.review.numberOfReviews}</p>
+                  <Rating value={row.review.rating} precision={0.5} readOnly />
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  {row.description}
+                <Grid item xs={12} md={5}>
+                  {row.briefDescription}
                 </Grid>
               </Grid>
             </Box>
@@ -123,6 +146,7 @@ const Row = (props: { row: any }) => {
 
 const Products = (props: any) => {
   const { row } = props.location.state;
+  const categoryName = row.name;
   const [products, setProducts] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -152,7 +176,6 @@ const Products = (props: any) => {
     getProducts();
   }, []);
   //this is dummy data
-  console.log(products);
 
   const logo = (url: string) => {
     return <img src={url} style={{ margin: "1px", width: 100, height: 100 }} />;
@@ -167,10 +190,11 @@ const Products = (props: any) => {
         <div id="header">
           <strong>Danh sách sản phẩm : {row.name}</strong>
           <ThemeProvider theme={darkTheme}>
-            <AddProductDialog
+            <ProductDialog
               open={openDialog}
               closeDialog={closeDialog}
-              categoryName={row.name}
+              categoryName={categoryName}
+              categoryId={row.id}
             />
             <TableContainer component={Paper} elevation={10}>
               <Table size="small">
@@ -183,7 +207,7 @@ const Products = (props: any) => {
                 </TableHead>
                 <TableBody>
                   {products.data.map((row: any) => (
-                    <Row row={row} key={row.id} />
+                    <Row row={row} key={row.id} categoryName={categoryName} />
                   ))}
                 </TableBody>
                 <TableFooter>
@@ -196,7 +220,7 @@ const Products = (props: any) => {
                         <ControlPointIcon
                           sx={{ fontSize: "1.5vw", pr: "5px" }}
                         />
-                        Add new discount
+                        Add new product
                       </div>
                     </div>
                   </TableCell>

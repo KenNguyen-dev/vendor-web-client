@@ -211,7 +211,7 @@ const Sidenav = (props: any) => {
                 <ListItemIcon>
                   <StorefrontIcon />
                 </ListItemIcon>
-                <ListItemText primary="Shop Info" />
+                <ListItemText primary="Thông Tin Shop" />
               </ListItem>
             </Tooltip>
             <ListItem button onClick={() => setCategoriesOpen(!categoriesOpen)}>
@@ -233,7 +233,7 @@ const Sidenav = (props: any) => {
                 <ListItemIcon>
                   <LocalShippingIcon />
                 </ListItemIcon>
-                <ListItemText primary="Orders" />
+                <ListItemText primary="Đơn Hàng" />
               </ListItem>
             </Tooltip>
             <Tooltip title="Discounts voucher" arrow placement="right">
@@ -241,7 +241,7 @@ const Sidenav = (props: any) => {
                 <ListItemIcon>
                   <MoneyIcon />
                 </ListItemIcon>
-                <ListItemText primary="Discounts" />
+                <ListItemText primary="Khuyến Mãi" />
               </ListItem>
             </Tooltip>
             <Tooltip title="Shop Reviews" arrow placement="right">
@@ -249,7 +249,7 @@ const Sidenav = (props: any) => {
                 <ListItemIcon>
                   <RateReviewIcon />
                 </ListItemIcon>
-                <ListItemText primary="Reviews" />
+                <ListItemText primary="Đánh Giá" />
               </ListItem>
             </Tooltip>
             <Tooltip title="Show me the money!" arrow placement="right">

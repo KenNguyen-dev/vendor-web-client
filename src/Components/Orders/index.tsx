@@ -175,8 +175,6 @@ const Row = (props: { row: IOrders }) => {
           </IconButton>
         </TableCell>
         <TableCell>{row.createdAt.toDateString()}</TableCell>
-        <TableCell>{row.updatedAt.toDateString()}</TableCell>
-        <TableCell>{row.deletedAt.toDateString()}</TableCell>
         <TableCell>{row.totalPrice.amount}</TableCell>
         <TableCell>
           {row.address.district}
@@ -542,8 +540,6 @@ const Orders = () => {
               <TableCell>Tên Khách Hàng</TableCell>
               <TableCell>Số Lượng Hàng</TableCell>
               <TableCell>Ngày Đặt</TableCell>
-              <TableCell>Ngày Cập Nhật</TableCell>
-              <TableCell>Ngày Xóa</TableCell>
               <TableCell>Tổng Tiền</TableCell>
               <TableCell>Địa chỉ</TableCell>
               <TableCell>Trạng Thái</TableCell>

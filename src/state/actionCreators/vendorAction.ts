@@ -4,8 +4,8 @@ import { VENDOR_URL } from "../../url";
 import axios from "axios";
 
 export const fetchVendor = (id?: string) => {
-  return (dispatch: Dispatch<VendorAction>) => {
-    return axios
+  return async (dispatch: Dispatch<VendorAction>) => {
+    return await axios
       .get(`${VENDOR_URL}?ownerId=${id}&limit=10&offset=0`)
       .then((res) => {
         const { data } = res.data;

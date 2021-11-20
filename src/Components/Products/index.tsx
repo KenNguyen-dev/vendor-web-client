@@ -173,9 +173,9 @@ const Products = (props: any) => {
   };
 
   useEffect(() => {
+    setLoading(true);
     getProducts();
-  }, []);
-  //this is dummy data
+  }, [row]);
 
   const logo = (url: string) => {
     return <img src={url} style={{ margin: "1px", width: 100, height: 100 }} />;

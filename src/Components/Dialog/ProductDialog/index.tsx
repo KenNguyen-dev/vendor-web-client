@@ -39,12 +39,11 @@ import { useTheme } from "@mui/material/styles";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
-import ControlPointIcon from "@mui/icons-material/ControlPoint";
 import RemoveIcon from "@mui/icons-material/Remove";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { styled } from "@mui/material/styles";
 import axios from "axios";
-import { PRODUCTS_URL, VENDOR_URL } from "../../../url";
+import { PRODUCTS_URL } from "../../../url";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useSelector } from "react-redux";
 import { State } from "../../../state/reducers";
@@ -526,7 +525,7 @@ const ProductDialog = (props: any) => {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button type="submit">Test</Button>
+            <Button type="submit">Tạo</Button>
           </DialogActions>
         </form>
       </Dialog>

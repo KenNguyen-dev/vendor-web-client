@@ -6,15 +6,15 @@ const initialState = "Dashboard";
 const titleReducer = (state = initialState, action: TitleAction) => {
   switch (action.type) {
     case TitleTypes.SHOPINFO:
-      return "Shop Information";
+      return "Thông Tin Shop";
     case TitleTypes.PRODUCTS:
-      return "Products";
+      return "Sản Phẩm";
     case TitleTypes.ORDERS:
-      return "Orders";
+      return "Đơn Hàng";
     case TitleTypes.DISCOUNTS:
-      return "Discounts";
+      return "Khuyến Mãi";
     case TitleTypes.REVIEWS:
-      return "Reviews";
+      return "Đánh Giá";
     case TitleTypes.ANALYTICS:
       return "Analytics";
     default:

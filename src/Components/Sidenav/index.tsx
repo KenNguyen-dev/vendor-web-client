@@ -25,8 +25,6 @@ import {
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import ChangeHistoryIcon from "@mui/icons-material/ChangeHistory";
-import CropSquareIcon from "@mui/icons-material/CropSquare";
 import CircleOutlinedIcon from "@mui/icons-material/CircleOutlined";
 import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -44,6 +42,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import { CATEGORIES_URL } from "../../url";
+import "./index.css";
 import axios from "axios";
 
 const GrandchildRow = (props: { row: any }) => {
@@ -162,7 +161,8 @@ const Sidenav = (props: any) => {
   const { user, logout } = useAuth0();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const history = useHistory();
   const [mobileOpen, setMobileOpen] = useState(false);
   const dispatch = useDispatch();
@@ -170,14 +170,17 @@ const Sidenav = (props: any) => {
     bindActionCreators(titlesAction, dispatch);
 
   const getCategories = async () => {
-    try {
-      const response = await axios.get(`${CATEGORIES_URL}`);
-      const data = response.data;
-      setCategories(data);
-      setLoading(false);
-    } catch {
-      console.log("error");
-    }
+    axios
+      .get(`${CATEGORIES_URL}`)
+      .then((response) => {
+        const data = response.data;
+        setCategories(data);
+        setLoading(!loading);
+      })
+      .catch((error) => {
+        setLoading(!loading);
+        setError(true);
+      });
   };
 
   const SideNavBar = (
@@ -266,10 +269,18 @@ const Sidenav = (props: any) => {
     </div>
   );
 
+  const HandleError = (
+    <div>
+      <h3>Lỗi kết nối tới server</h3>
+      <SentimentVeryDissatisfiedIcon />
+    </div>
+  );
+
   useEffect(() => {
     getCategories();
   }, []);
 
+  //#region redux handlers
   const title = useSelector((state: State) => state.title);
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -298,6 +309,9 @@ const Sidenav = (props: any) => {
     analytics();
   };
 
+  //#endregion
+
+  //#region Dropdown Menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -322,6 +336,26 @@ const Sidenav = (props: any) => {
       <MenuItem onClick={() => logout()}>Logout</MenuItem>
     </Menu>
   );
+  //#endregion
+
+  if (loading)
+    //Chỉ là loading screen
+    return (
+      <div className="container">
+        <div className="loading">
+          <div className="loading__letter">L</div>
+          <div className="loading__letter">o</div>
+          <div className="loading__letter">a</div>
+          <div className="loading__letter">d</div>
+          <div className="loading__letter">i</div>
+          <div className="loading__letter">n</div>
+          <div className="loading__letter">g</div>
+          <div className="loading__letter">.</div>
+          <div className="loading__letter">.</div>
+          <div className="loading__letter">.</div>
+        </div>
+      </div>
+    );
 
   return (
     <div>
@@ -379,7 +413,7 @@ const Sidenav = (props: any) => {
               },
             }}
           >
-            {loading ? <CircularProgress /> : SideNavBar}
+            {error ? HandleError : SideNavBar}
           </Drawer>
           <Drawer
             variant="permanent"
@@ -392,7 +426,7 @@ const Sidenav = (props: any) => {
             }}
             open
           >
-            {loading ? <CircularProgress /> : SideNavBar}
+            {error ? HandleError : SideNavBar}
           </Drawer>
         </Box>
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>

@@ -26,6 +26,14 @@ import {
   IconButton,
   Paper,
   TableContainer,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  CircularProgress,
+  Grid,
+  FormHelperText,
+  Backdrop,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import MobileDatePicker from "@mui/lab/MobileDatePicker";
@@ -39,6 +47,12 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import axios from "axios";
+import { useForm, Controller } from "react-hook-form";
+import { CATEGORIES_URL, PRODUCTS_URL, DISCOUNT_URL } from "../../../url";
+import { useSelector } from "react-redux";
+import { State } from "../../../state/reducers";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 28,
@@ -102,6 +116,7 @@ const AddDiscountDialog = (props: any) => {
 
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const vendor: any = useSelector((state: State) => state.vendor);
   const [basic, setBasic] = useState(true);
   const [advance, setAdvance] = useState(false);
   const [discountList, setDiscountList] = useState(true);
@@ -111,15 +126,21 @@ const AddDiscountDialog = (props: any) => {
   const [addedProducts, setAddedProducts] = useState<any>([]);
   const [productValues, setProductValues] =
     useState<IDiscountProducts | null>();
-
-  useEffect(() => {
-    setValues((prevState) => ({ ...prevState, product: addedProducts }));
-  }, [addedProducts]);
-  //test Data
-  const options = [
-    { name: "The Godfather", id: 1 },
-    { name: "Pulp Fiction", id: 2 },
-  ];
+  const [categories, setCategories] = useState<any>([]);
+  const [products, setProducts] = useState<any>([]);
+  const [disabled, setDisabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<any>();
+  const [currency, setCurrency] = useState("");
+  const [vendorSelected, setVendorSelected] = useState<any>();
+  const [formLoading, setFormLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    control,
+  } = useForm();
 
   interface IDiscountProducts {
     name: string;
@@ -127,7 +148,7 @@ const AddDiscountDialog = (props: any) => {
   }
 
   const defaultProps = {
-    options: options,
+    options: products,
     getOptionLabel: (option: any) => option.name,
   };
 
@@ -150,43 +171,6 @@ const AddDiscountDialog = (props: any) => {
     );
   };
 
-  const handleInputChanges = (e: any) => {
-    const { name, value } = e.target;
-    if (name != "isFlatAmount") {
-      setValues({
-        ...values,
-        [name]: value,
-      });
-    } else {
-      setValues({
-        ...values,
-        [name]: e.target.checked,
-      });
-    }
-  };
-
-  const checkEmpty = () => {
-    for (const [key, value] of Object.entries(values)) {
-      if (value === "") {
-        return true;
-      }
-    }
-  };
-
-  const createNewDiscount = () => {
-    var utc = new Date();
-    if (checkEmpty()) {
-      window.alert("Vui lòng nhập đủ thông tin");
-    } else if (values.product.length == 0) {
-      console.log(values.product.length);
-      window.alert("Vui lòng thêm sản phẩm");
-    } else if (startDate > endDate || endDate < utc) {
-      window.alert("Vui lòng kiểm tra lại ngày");
-    } else {
-      window.alert("send me");
-    }
-  };
-
   const handleStartDate = (newDate: any) => {
     setStartDate(newDate);
     setValues((prevState) => ({
@@ -201,244 +185,560 @@ const AddDiscountDialog = (props: any) => {
       endDate: newDate._d,
     }));
   };
+
+  const handleCurencyChange = (event: any) => {
+    const { value } = event.target;
+    setCurrency(value);
+  };
+  const handleVendorChange = (event: any) => {
+    const { value } = event.target;
+    setVendorSelected(value);
+  };
+
+  const getCategories = async () => {
+    axios
+      .get(`${CATEGORIES_URL}`)
+      .then((response) => {
+        const data = response.data;
+        setCategories(data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  const getProducts = async (id: string) => {
+    setDisabled(false);
+    setLoading(true);
+    await axios
+      .get(`${PRODUCTS_URL}?limit=10&offset=0&categoryId=${id}`)
+      .then((response) => {
+        const { data } = response.data;
+        setProducts(data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    getCategories();
+    setDefaultValues();
+  }, []);
+
+  useEffect(() => {
+    setValues((prevState) => ({ ...prevState, product: addedProducts }));
+  }, [addedProducts]);
+
+  const setDefaultValues = () => {
+    setValue("discountRule", 1);
+    setValue("isFlatAmount", false);
+    setValue("modifier", 1);
+  };
+
+  const onSubmit = async (data: any) => {
+    var today = new Date();
+    if (startDate > endDate) {
+      alert("Ngày bắt đầu không thể lớn hơn ngày kết thúc");
+      return;
+    } else if (endDate < today) {
+      alert("Ngày kết thúc không được bé hơn ngày hôm nay");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("vendorId", data.vendorId);
+    formData.append("discountName", data.discountName);
+    formData.append("description", data.description);
+    formData.append("priority", data.priority);
+    formData.append("allowedUses", data.allowedUses);
+    formData.append("modifier", data.modifier);
+    formData.append("discountRule", data.discountRule);
+    //convert date to date string
+    formData.append("startDate", startDate.toString());
+    formData.append("endDate", endDate.toString());
+    formData.append("isFlatAmount", data.isFlatAmount);
+    formData.append("unit", data.unit);
+
+    formData.append("files", image);
+
+    addedProducts.forEach((item: any, index: number) => {
+      formData.append(`product[${index}]`, item.id);
+    });
+
+    setFormLoading(true);
+    try {
+      const res = await axios.post(`${DISCOUNT_URL}`, formData);
+      if (res.status === 201 || res.status === 200) {
+        setFormLoading(false);
+        alert("Tạo thành công. Vui lòng tải lại trang");
+      }
+    } catch {
+      setFormLoading(false);
+      alert("Lỗi kết nối tới server");
+    }
+
+    // setIsLoading(true);
+    // const res = await axios.post(`${VENDOR_URL}`, formData);
+    // if (res.status === 201 || res.status === 200) {
+    //   setIsLoading(false);
+    //   alert("Tạo thành công. Vui lòng tải lại trang");
+    //   fetchVendor(user?.sub!);
+    // } else {
+    //   setIsLoading(false);
+    //   alert(res.data.message);
+    // }
+    //console.log(data);
+  };
+
+  //#region upload image
+  const handleImageUpload = (e: any) => {
+    //check if file is an image
+    if (e.target.files[0].type.split("/")[0] !== "image") {
+      alert("File không hợp lệ");
+      return;
+    }
+    const file = e.target.files[0];
+    setImage(file);
+  };
+  const Input = styled("input")({
+    display: "none",
+  });
+  //#endregion
+
   return (
     <div>
-      <Dialog
-        open={props.open}
-        onClose={() => props.closeDialog()}
-        fullScreen={fullScreen}
-        fullWidth={true}
-        maxWidth="sm"
-      >
-        <DialogTitle sx={{ textAlign: "center" }}>DISCOUNT</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <List
-              sx={{
-                width: "100%",
-                bgcolor: "none",
-              }}
-            >
-              <ListItemButton onClick={() => setBasic(!basic)}>
-                <ListItemIcon>
-                  <BookmarkIcon />
-                </ListItemIcon>
-                <ListItemText primary="Basic settings" />
-                {basic ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={basic} timeout="auto" unmountOnExit>
-                <List disablePadding>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Tên Discount: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <TextField
-                      name="discountName"
-                      variant="standard"
-                      fullWidth
-                      size="small"
-                      onChange={handleInputChanges}
-                    />
-                  </ListItem>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Thứ tự ưu tiên: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <TextField
-                      name="priority"
-                      variant="standard"
-                      type="number"
-                      fullWidth
-                      size="small"
-                      onChange={handleInputChanges}
-                    />
-                  </ListItem>
-                </List>
-                <ListItem sx={{ pl: 4 }}>
-                  <ListItemIcon></ListItemIcon>
-                  <ListItemText
-                    primary="Số lần sử dụng: "
-                    sx={{ width: "15vw", pr: 5 }}
-                  />
-                  <TextField
-                    name="allowedUses"
-                    variant="standard"
-                    fullWidth
-                    size="small"
-                    type="number"
-                    onChange={handleInputChanges}
-                  />
-                </ListItem>
-                <LocalizationProvider dateAdapter={AdapterMoment}>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Ngày bắt đầu: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <MobileDatePicker
-                      value={startDate}
-                      onChange={handleStartDate}
-                      renderInput={(params) => <TextField {...params} />}
-                    />
-                  </ListItem>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Ngày kết thúc: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <MobileDatePicker
-                      value={endDate}
-                      onChange={handleEndDate}
-                      renderInput={(params) => <TextField {...params} />}
-                    />
-                  </ListItem>
-                </LocalizationProvider>
-                <ListItem sx={{ pl: 4 }}>
-                  <ListItemIcon></ListItemIcon>
-                  <ListItemText
-                    primary="Chú thích: "
-                    sx={{ width: "15vw", pr: 5 }}
-                  />
-                  <TextField
-                    name="description"
-                    variant="standard"
-                    fullWidth
-                    size="small"
-                    onChange={handleInputChanges}
-                  />
-                </ListItem>
-              </Collapse>
-              <ListItemButton onClick={() => setDiscountList(!discountList)}>
-                <ListItemIcon>
-                  <ViewListIcon />
-                </ListItemIcon>
-                <ListItemText primary="Add Products" />
-                {discountList ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={discountList} timeout="auto" unmountOnExit>
-                <div style={{ marginLeft: 70 }}>
-                  <Stack direction="row" spacing={1}>
-                    <Autocomplete
-                      sx={{ minWidth: 350 }}
-                      {...defaultProps}
-                      id="auto-select"
-                      autoSelect
-                      onChange={handleProductChange}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Chọn Products"
-                          variant="outlined"
+      {formLoading ? (
+        <Backdrop
+          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={formLoading}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      ) : (
+        <Dialog
+          open={props.open}
+          onClose={() => props.closeDialog()}
+          fullScreen={fullScreen}
+          fullWidth={true}
+          maxWidth="lg"
+        >
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <DialogTitle sx={{ textAlign: "center" }}>DISCOUNT</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    {image ? (
+                      <div className="imageBorder">
+                        <img
+                          src={URL.createObjectURL(image)}
+                          className="image"
+                          alt="image"
                         />
-                      )}
-                    />
-                    <IconButton onClick={() => addToList()}>
-                      <AddBoxIcon sx={{ fontSize: 45 }} />
-                    </IconButton>
-                  </Stack>
-                  <TableContainer component={Paper}>
-                    <Table sx={{ minWidth: 100 }} size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>ID</TableCell>
-                          <TableCell align="center">Tên</TableCell>
-                          <TableCell align="center">Delete</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {addedProducts.map((row: IDiscountProducts) => {
-                          return (
-                            <TableRow>
-                              <TableCell>{row.id}</TableCell>
-                              <TableCell align="center">{row.name}</TableCell>
-                              <TableCell align="center">
-                                <IconButton
-                                  onClick={() => handleRemoveItem(row.id)}
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </div>
-              </Collapse>
-              <ListItemButton onClick={() => setAdvance(!advance)}>
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary="Advance settings" />
-                {advance ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={advance} timeout="auto" unmountOnExit>
-                <List disablePadding>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Discount Rule: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <TextField
-                      name="discountRule"
-                      variant="standard"
-                      fullWidth
-                      type="number"
-                      size="small"
-                      onChange={handleInputChanges}
-                    />
-                  </ListItem>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Modifier: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <TextField
-                      name="modifier"
-                      variant="standard"
-                      fullWidth
-                      type="number"
-                      size="small"
-                      onChange={handleInputChanges}
-                    />
-                  </ListItem>
-                  <ListItem sx={{ pl: 4 }}>
-                    <ListItemIcon></ListItemIcon>
-                    <ListItemText
-                      primary="Flat Amount: "
-                      sx={{ width: "15vw", pr: 5 }}
-                    />
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography>No</Typography>
-                      <AntSwitch
-                        inputProps={{ "aria-label": "ant design" }}
-                        name="isFlatAmount"
-                        onChange={handleInputChanges}
-                      />
-                      <Typography>Yes</Typography>
-                    </Stack>
-                  </ListItem>
-                </List>
-              </Collapse>
-            </List>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => createNewDiscount()}>CREATE</Button>
-          {/* <Button onClick={() => props.closeDialog()}>CANCLE</Button> */}
+                      </div>
+                    ) : null}
 
-          <Button onClick={() => console.log(values)}>CANCLE</Button>
-        </DialogActions>
-      </Dialog>
+                    <div
+                      style={{
+                        margin: "auto",
+                        width: "fit-content",
+                        marginTop: "10px",
+                      }}
+                    >
+                      <label htmlFor="contained-button-file">
+                        <Input
+                          accept="image/*"
+                          id="contained-button-file"
+                          type="file"
+                          onChange={handleImageUpload}
+                        />
+                        <Button
+                          variant="contained"
+                          component="span"
+                          sx={{
+                            fontWeight: "bold",
+                            fontSize: "15px",
+                            width: "fit-content",
+                            mr: "10px",
+                            ml: "10px",
+                          }}
+                        >
+                          Upload
+                          <PhotoCamera sx={{ pl: 1 }} />
+                        </Button>
+                      </label>
+                    </div>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <List
+                      sx={{
+                        width: "100%",
+                        bgcolor: "none",
+                      }}
+                    >
+                      <ListItemButton onClick={() => setBasic(!basic)}>
+                        <ListItemIcon>
+                          <BookmarkIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Cài đặt cơ bản" />
+                        {basic ? <ExpandLess /> : <ExpandMore />}
+                      </ListItemButton>
+                      <Collapse in={basic} timeout="auto" unmountOnExit>
+                        <List disablePadding>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Vendor: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <FormControl
+                              sx={{ width: 200 }}
+                              error={errors.vendorId}
+                            >
+                              <InputLabel>Vendor</InputLabel>
+                              <Select
+                                {...register("vendorId", {
+                                  required: "Vui lòng chọn vendor",
+                                })}
+                                label="Vendor"
+                                value={vendorSelected}
+                                onChange={handleVendorChange}
+                              >
+                                {vendor.map((v: any) => (
+                                  <MenuItem key={v.id} value={v.id}>
+                                    {v.name}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                              <FormHelperText>
+                                {errors.vendorId && errors.vendorId.message}
+                              </FormHelperText>
+                            </FormControl>
+                          </ListItem>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Tên Discount: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <TextField
+                              error={errors.discountName}
+                              variant="standard"
+                              fullWidth
+                              size="small"
+                              {...register("discountName", {
+                                required: "Vui lòng nhập đầy đủ",
+                              })}
+                              helperText={
+                                errors.discountName &&
+                                errors.discountName.message
+                              }
+                            />
+                          </ListItem>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Thứ tự ưu tiên: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <TextField
+                              error={errors.priority}
+                              variant="standard"
+                              type="number"
+                              fullWidth
+                              size="small"
+                              {...register("priority", {
+                                required: "Vui lòng nhập đầy đủ",
+                                min: {
+                                  value: 1,
+                                  message: "Vui lòng nhập số lớn hơn 0",
+                                },
+                              })}
+                              helperText={
+                                errors.priority && errors.priority.message
+                              }
+                            />
+                          </ListItem>
+                        </List>
+                        <ListItem sx={{ pl: 4 }}>
+                          <ListItemIcon></ListItemIcon>
+                          <ListItemText
+                            primary="Số lần sử dụng: "
+                            sx={{ width: "15vw", pr: 5 }}
+                          />
+                          <TextField
+                            error={errors.allowedUses}
+                            variant="standard"
+                            fullWidth
+                            size="small"
+                            type="number"
+                            {...register("allowedUses", {
+                              required: "Vui lòng nhập đầy đủ",
+                              min: {
+                                value: 1,
+                                message: "Vui lòng nhập số lớn hơn 0",
+                              },
+                            })}
+                            helperText={
+                              errors.allowedUses && errors.allowedUses.message
+                            }
+                          />
+                        </ListItem>
+                        <LocalizationProvider dateAdapter={AdapterMoment}>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Ngày bắt đầu: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <MobileDatePicker
+                              value={startDate}
+                              onChange={handleStartDate}
+                              renderInput={(params) => (
+                                <TextField {...params} />
+                              )}
+                            />
+                          </ListItem>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Ngày kết thúc: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <MobileDatePicker
+                              value={endDate}
+                              onChange={handleEndDate}
+                              renderInput={(params) => (
+                                <TextField {...params} />
+                              )}
+                            />
+                          </ListItem>
+                        </LocalizationProvider>
+
+                        <ListItem sx={{ pl: 4 }}>
+                          <ListItemIcon></ListItemIcon>
+                          <ListItemText
+                            primary="Tiền tệ: "
+                            sx={{ width: "15vw", pr: 5 }}
+                          />
+                          <FormControl sx={{ width: 100 }} error={errors.unit}>
+                            <InputLabel>Unit</InputLabel>
+                            <Select
+                              {...register("unit", {
+                                required: "Vui lòng chọn loại tiền",
+                              })}
+                              label="Unit"
+                              value={currency}
+                              onChange={handleCurencyChange}
+                            >
+                              <MenuItem value={"VND"}>VND</MenuItem>
+                              <MenuItem value={"USD"}>USD</MenuItem>
+                            </Select>
+                            <FormHelperText>
+                              {errors.unit && errors.unit.message}
+                            </FormHelperText>
+                          </FormControl>
+                        </ListItem>
+                        <ListItem sx={{ pl: 4 }}>
+                          <ListItemIcon></ListItemIcon>
+                          <ListItemText
+                            primary="Chú thích: "
+                            sx={{ width: "15vw", pr: 5 }}
+                          />
+                          <TextField
+                            error={errors.description}
+                            variant="standard"
+                            fullWidth
+                            size="small"
+                            {...register("description", {
+                              required: "Vui lòng nhập đầy đủ",
+                            })}
+                            helperText={
+                              errors.description && errors.description.message
+                            }
+                          />
+                        </ListItem>
+                      </Collapse>
+                      <ListItemButton
+                        onClick={() => setDiscountList(!discountList)}
+                      >
+                        <ListItemIcon>
+                          <ViewListIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Thêm products" />
+                        {discountList ? <ExpandLess /> : <ExpandMore />}
+                      </ListItemButton>
+                      <Collapse in={discountList} timeout="auto" unmountOnExit>
+                        <div style={{ marginLeft: 70 }}>
+                          <FormControl fullWidth sx={{ mb: 3 }}>
+                            <InputLabel>Categories</InputLabel>
+                            <Select label="Categories">
+                              {categories.map((category: any) => (
+                                <MenuItem
+                                  key={category.id}
+                                  value={category.id}
+                                  onClick={() => getProducts(category.id)}
+                                >
+                                  {category.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          {loading ? (
+                            <CircularProgress />
+                          ) : (
+                            <Stack direction="row" spacing={1}>
+                              <Autocomplete
+                                disabled={disabled}
+                                sx={{ minWidth: 350 }}
+                                {...defaultProps}
+                                id="auto-select"
+                                autoSelect
+                                onChange={handleProductChange}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Chọn Products"
+                                    variant="outlined"
+                                  />
+                                )}
+                              />
+                              <IconButton
+                                onClick={() => addToList()}
+                                disabled={disabled}
+                              >
+                                <AddBoxIcon sx={{ fontSize: 45 }} />
+                              </IconButton>
+                            </Stack>
+                          )}
+
+                          <TableContainer component={Paper}>
+                            <Table sx={{ minWidth: 100 }} size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>ID</TableCell>
+                                  <TableCell align="center">Tên</TableCell>
+                                  <TableCell align="center">Delete</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {addedProducts.map((row: IDiscountProducts) => {
+                                  return (
+                                    <TableRow>
+                                      <TableCell>{row.id}</TableCell>
+                                      <TableCell align="center">
+                                        {row.name}
+                                      </TableCell>
+                                      <TableCell align="center">
+                                        <IconButton
+                                          onClick={() =>
+                                            handleRemoveItem(row.id)
+                                          }
+                                        >
+                                          <DeleteIcon />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </div>
+                      </Collapse>
+                      <ListItemButton onClick={() => setAdvance(!advance)}>
+                        <ListItemIcon>
+                          <SettingsIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Cài đặt nâng cao" />
+                        {advance ? <ExpandLess /> : <ExpandMore />}
+                      </ListItemButton>
+                      <Collapse in={advance} timeout="auto" unmountOnExit>
+                        <List disablePadding>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Discount Rule: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <TextField
+                              error={errors.discountRule}
+                              variant="standard"
+                              fullWidth
+                              type="number"
+                              size="small"
+                              {...register("discountRule", {
+                                min: {
+                                  value: 1,
+                                  message: "Vui lòng nhập số lớn hơn 0",
+                                },
+                              })}
+                              helperText={
+                                errors.discountRule &&
+                                errors.discountRule.message
+                              }
+                            />
+                          </ListItem>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Modifier: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <TextField
+                              error={errors.modifier}
+                              variant="standard"
+                              fullWidth
+                              type="number"
+                              size="small"
+                              {...register("modifier", {
+                                min: {
+                                  value: 1,
+                                  message: "Vui lòng nhập số lớn hơn 0",
+                                },
+                              })}
+                              helperText={
+                                errors.modifier && errors.modifier.message
+                              }
+                            />
+                          </ListItem>
+                          <ListItem sx={{ pl: 4 }}>
+                            <ListItemIcon></ListItemIcon>
+                            <ListItemText
+                              primary="Flat Amount: "
+                              sx={{ width: "15vw", pr: 5 }}
+                            />
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Typography>No</Typography>
+                              <Controller
+                                control={control}
+                                render={() => <AntSwitch />}
+                                name="isFlatAmount"
+                              />
+                              <Typography>Yes</Typography>
+                            </Stack>
+                          </ListItem>
+                        </List>
+                      </Collapse>
+                    </List>
+                  </Grid>
+                </Grid>
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button type="submit">CREATE</Button>
+              {/* <Button onClick={() => props.closeDialog()}>CANCLE</Button> */}
+
+              <Button onClick={() => console.log(values)}>CANCLE</Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      )}
     </div>
   );
 };

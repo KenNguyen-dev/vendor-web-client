@@ -17,6 +17,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  CircularProgress,
+  Backdrop,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -31,7 +33,6 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import OrderDialog from "../Dialog/OrderDialog";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-
 import { useTheme } from "@mui/material/styles";
 import IOrders, { OrderState } from "./interfaces";
 import { useDispatch } from "react-redux";
@@ -40,6 +41,7 @@ import { dialogAction } from "../../state/index";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { State } from "../../state/reducers";
+import { ORDER_URL } from "../../url";
 
 const deleteButtonStyle: CSS.Properties = {
   fontSize: "1.5vmin",
@@ -96,21 +98,23 @@ const TablePaginationActions = (props: TablePaginationActionsProps) => {
   );
 };
 
-const Row = (props: { row: IOrders }) => {
+const Row = (props: { row: any }) => {
   const { row } = props;
-  const [customerOpen, setCustomerOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [itemOpen, setItemOpen] = useState(false);
   const [page, setPage] = useState(0);
-  const [status, setStatus] = useState(row.state);
-  const [buttonColor, setButtonColor] = useState<any>("primary");
+  const [status, setStatus] = useState(row.status);
+  const [loading, setLoading] = useState(false);
 
+  const rowsPerPage = 3;
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
   };
-  const rowsPerPage = 3;
+
   const dispatch = useDispatch();
   const { openDialog } = bindActionCreators(dialogAction, dispatch);
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -120,16 +124,43 @@ const Row = (props: { row: IOrders }) => {
     setAnchorEl(null);
   };
 
+  const setOrderStatus = async (status: string) => {
+    setLoading(true);
+    const { id } = row;
+    const response = await axios.patch(`${ORDER_URL}/${id}`, {
+      status: status,
+    });
+    if (response.status === 200 || response.status === 201) {
+      setLoading(false);
+      setStatus(status);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const changeButtonColor = (status: string) => {
+    switch (status) {
+      case OrderState.CREATED:
+        return "primary";
+      case OrderState.APPROVED:
+        return "secondary";
+      case OrderState.COMPLETE:
+        return "success";
+      default:
+        break;
+    }
+  };
+
   const handleMenuItemClick = (e: any) => {
     switch (e.target.textContent) {
-      case "APPROVED":
+      case OrderState.APPROVED:
         setStatus(OrderState.APPROVED);
-        setButtonColor("secondary");
+        setOrderStatus(OrderState.APPROVED);
         setAnchorEl(null);
         break;
-      case "COMPLETED":
+      case OrderState.COMPLETE:
         setStatus(OrderState.COMPLETE);
-        setButtonColor("success");
+        setOrderStatus(OrderState.COMPLETE);
         setAnchorEl(null);
         break;
       default:
@@ -148,24 +179,41 @@ const Row = (props: { row: IOrders }) => {
         "aria-labelledby": "basic-button",
       }}
     >
-      <MenuItem onClick={(e) => handleMenuItemClick(e)}>APPROVED</MenuItem>
-      <MenuItem onClick={(e) => handleMenuItemClick(e)}>COMPLETED</MenuItem>
+      {status == "Approved" ? (
+        <MenuItem onClick={(e) => handleMenuItemClick(e)}>Complete</MenuItem>
+      ) : (
+        status != "Complete" && (
+          <Fragment>
+            <MenuItem onClick={(e) => handleMenuItemClick(e)}>
+              Approved
+            </MenuItem>
+            <MenuItem onClick={(e) => handleMenuItemClick(e)}>
+              Complete
+            </MenuItem>
+          </Fragment>
+        )
+      )}
     </Menu>
   );
 
+  const date = new Date(row.createdAt);
+
   return (
     <Fragment>
+      <Backdrop
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <TableRow
-        onDoubleClick={() => openDialog(row)}
+        // onDoubleClick={() => openDialog(row)}
         style={{ cursor: "pointer" }}
       >
         <TableCell>
-          {row.customer.fullName}
-          <IconButton
-            size="small"
-            onClick={() => setCustomerOpen(!customerOpen)}
-          >
-            {customerOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          {row.receipt.type.toUpperCase()}
+          <IconButton size="small" onClick={() => setReceiptOpen(!receiptOpen)}>
+            {receiptOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
         <TableCell>
@@ -174,17 +222,22 @@ const Row = (props: { row: IOrders }) => {
             {itemOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell>{row.createdAt.toDateString()}</TableCell>
-        <TableCell>{row.totalPrice.amount}</TableCell>
+        {/* <TableCell>{row.createdAt.toDateString()}</TableCell> */}
+        {/* //normalize date */}
+        <TableCell>{date.toLocaleDateString()}</TableCell>
         <TableCell>
-          {row.address.district}
+          {row.totalPrice}/{row.priceUnit}
+        </TableCell>
+        <TableCell>
+          {/* {row.address.district} */}
+          Q.10
           <IconButton size="small" onClick={() => setAddressOpen(!addressOpen)}>
             {addressOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
         <TableCell>
           <Button
-            color={buttonColor}
+            color={changeButtonColor(status)}
             variant="contained"
             onClick={(e) => handleClick(e)}
           >
@@ -195,13 +248,21 @@ const Row = (props: { row: IOrders }) => {
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0, paddingRight: 0 }}>
-          <Collapse in={customerOpen} timeout="auto" unmountOnExit>
+          <Collapse in={receiptOpen} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <div>
-                <h2>Khách Hàng: </h2>
-                <p>Tên: {row.customer.fullName}</p>
-                <p>Email: {row.customer.email}</p>
-                <p>SDT: {row.customer.phoneNumber}</p>
+                <h2>Thông tin hóa đơn: </h2>
+                <p>Loại: {row.receipt.type}</p>
+                <p>Tổng tiền: {row.receipt.amount}</p>
+                <p>Tiền Tệ: {row.receipt.currency}</p>
+                <p>
+                  Đã thanh toán:{" "}
+                  {row.receipt.paid ? (
+                    <CircleIcon sx={{ color: "green", fontSize: "12px" }} />
+                  ) : (
+                    <CircleIcon sx={{ color: "red", fontSize: "12px" }} />
+                  )}
+                </p>
               </div>
             </Box>
           </Collapse>
@@ -224,20 +285,20 @@ const Row = (props: { row: IOrders }) => {
                 <TableBody>
                   {row.items
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((item) => {
+                    .map((item: any) => {
                       return (
                         <TableRow>
                           <TableCell>{item.id}</TableCell>
-                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.product.name}</TableCell>
                           <TableCell>{item.quantity}</TableCell>
                           <TableCell>
-                            {item.price.amount}/{item.price.unit}
+                            {item.price}/{item.priceUnit}
                           </TableCell>
                           <TableCell>
-                            {item.totalPrice.amount}/{item.totalPrice.unit}
+                            {item.totalPrice}/{item.priceUnit}
                           </TableCell>
-                          <TableCell>{item.vendorName}</TableCell>
-                          <TableCell>{item.imageUrl}</TableCell>
+                          <TableCell>{row.vendor.name}</TableCell>
+                          <TableCell>{item.product.imageUrl}</TableCell>
                           <TableCell>
                             <IconButton>
                               <DeleteForeverIcon />
@@ -269,14 +330,14 @@ const Row = (props: { row: IOrders }) => {
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
           <Collapse in={addressOpen} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <div>
-                <strong>Địa chỉ giao hàng</strong> : {row.address.street},{" "}
+                {/* <strong>Địa chỉ giao hàng</strong> : {row.address.street},{" "}
                 {row.address.ward}, {row.address.district},{" "}
-                {row.address.country}
-                <p>Note: {row.address.details}</p>
+                {row.address.country} */}
+                <p>Note: {row.notes}</p>
               </div>
             </Box>
           </Collapse>
@@ -291,220 +352,32 @@ const Row = (props: { row: IOrders }) => {
 const Orders = () => {
   const vendor: any = useSelector((state: State) => state.vendor);
   const [vendorList, setVendorList] = useState<any>([]);
-  const [vendorSelected, setvendorSelected] = useState<any>();
+  const [vendorSelected, setvendorSelected] = useState<string>("");
   const [orders, setOrders] = useState<any>([]);
-
-  //đây là data mẫu
-  const rows: IOrders[] = [
-    {
-      customer: {
-        email: "test@emailc.com",
-        phoneNumber: "0721379123",
-        fullName: "Tom",
-      },
-      address: {
-        id: 1,
-        country: "Viet Nam",
-        city: "Ho Chi Minh",
-        district: "Q.10",
-        ward: "P.10",
-        street: "Ly Thai to",
-        details: "Detail",
-      },
-      notes: "This is note",
-      state: OrderState.CREATED,
-      createdAt: new Date(2021, 10, 27),
-      updatedAt: new Date(2021, 10, 27),
-      deletedAt: new Date(2021, 10, 27),
-      totalPrice: {
-        amount: 20000,
-        unit: "VND",
-      },
-      items: [
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 10000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 20000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 30000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 40000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 50000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 60000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 70000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-      ],
-      id: "73",
-    },
-    {
-      customer: {
-        email: "test@email",
-        phoneNumber: "732013710",
-        fullName: "John",
-      },
-      address: {
-        id: 1,
-        country: "Viet Nam",
-        city: "Ho Chi Minh",
-        district: "Q.10",
-        ward: "P.10",
-        street: "Ly Thai to",
-        details: "Detail",
-      },
-      notes: "This is note",
-      state: OrderState.CREATED,
-      createdAt: new Date(2021, 10, 27),
-      updatedAt: new Date(2021, 10, 27),
-      deletedAt: new Date(2021, 10, 27),
-      totalPrice: {
-        amount: 20000,
-        unit: "VND",
-      },
-      items: [
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 10000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 20000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 30000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 40000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 50000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 60000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-        {
-          imageUrl: "Image Logo",
-          vendorName: "Vendor name",
-          productId: "27",
-          price: { amount: 70000, unit: "VND" },
-          quantity: 56,
-          name: "Áo thun",
-          totalPrice: { amount: 50000, unit: "VND" },
-          id: 1,
-        },
-      ],
-      id: "65",
-    },
-  ];
+  const [loading, setLoading] = useState<boolean>(false);
 
   const getVendorInfo = () => {
     setVendorList(vendor);
+  };
+
+  const getOrderList = async () => {
+    if (vendorSelected == "") return;
+    setLoading(true);
+    const response = await axios.get(
+      `${ORDER_URL}?vendorId=${vendorSelected}&limit=10&offset=0`
+    );
+    setLoading(false);
+    const { data } = response.data;
+    setOrders(data);
   };
 
   useEffect(() => {
     getVendorInfo();
   }, []);
 
-  // useEffect(() => {
-  //   getOrderList();
-  // }, [vendorSelected]);
+  useEffect(() => {
+    getOrderList();
+  }, [vendorSelected]);
 
   const handleVendorChange = (e: any) => {
     setvendorSelected(e.target.value);
@@ -532,26 +405,34 @@ const Orders = () => {
           </FormControl>
         </p>
       </div>
-      <ThemeProvider theme={darkTheme}>
-        <OrderDialog />
-        <TableContainer component={Paper} elevation={10}>
-          <Table size="small">
-            <TableHead>
-              <TableCell>Tên Khách Hàng</TableCell>
-              <TableCell>Số Lượng Hàng</TableCell>
-              <TableCell>Ngày Đặt</TableCell>
-              <TableCell>Tổng Tiền</TableCell>
-              <TableCell>Địa chỉ</TableCell>
-              <TableCell>Trạng Thái</TableCell>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => (
-                <Row row={row} />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </ThemeProvider>
+      {loading ? (
+        <div style={{ textAlign: "center" }}>
+          <CircularProgress />
+        </div>
+      ) : (
+        orders.length != 0 && (
+          <ThemeProvider theme={darkTheme}>
+            <OrderDialog />
+            <TableContainer component={Paper} elevation={10}>
+              <Table size="small">
+                <TableHead>
+                  <TableCell>Hóa đơn</TableCell>
+                  <TableCell>Số Lượng Hàng</TableCell>
+                  <TableCell>Ngày Đặt</TableCell>
+                  <TableCell>Tổng Tiền</TableCell>
+                  <TableCell>Địa chỉ</TableCell>
+                  <TableCell>Trạng Thái</TableCell>
+                </TableHead>
+                <TableBody>
+                  {orders.map((row: any) => (
+                    <Row row={row} />
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </ThemeProvider>
+        )
+      )}
     </div>
   );
 };

@@ -13,6 +13,12 @@ export const fetchVendor = (id?: string) => {
           type: "FETCH",
           payload: data,
         });
+      })
+      .catch(() => {
+        dispatch({
+          type: "FETCH",
+          payload: [],
+        });
       });
   };
 };

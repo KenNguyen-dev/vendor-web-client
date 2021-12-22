@@ -88,12 +88,15 @@ const Row = (props: { row: any; categoryName: string }) => {
 
   return (
     <Fragment>
-      <ProductDialog
-        open={openDialog}
-        closeDialog={closeDialog}
-        categoryName={categoryName}
-        categoryId={row.id}
-      />
+      {openDialog && (
+        <ProductDialog
+          open={openDialog}
+          closeDialog={closeDialog}
+          categoryName={categoryName}
+          categoryId={row.id}
+          productId={row.id}
+        />
+      )}
       <TableRow key={row.id}>
         <TableCell>{row.name}</TableCell>
         <TableCell>
@@ -101,7 +104,12 @@ const Row = (props: { row: any; categoryName: string }) => {
         </TableCell>
         <TableCell>{row.stock}</TableCell>
         <TableCell>
-          <Button variant="contained" color="warning" style={updateButtonStyle}>
+          <Button
+            variant="contained"
+            color="warning"
+            style={updateButtonStyle}
+            onClick={() => updateProduct()}
+          >
             Update
           </Button>
           <Button variant="contained" color="error" style={deleteButtonStyle}>
@@ -190,12 +198,16 @@ const Products = (props: any) => {
         <div id="header">
           <strong>Danh sách sản phẩm : {row.name}</strong>
           <ThemeProvider theme={darkTheme}>
-            <ProductDialog
-              open={openDialog}
-              closeDialog={closeDialog}
-              categoryName={categoryName}
-              categoryId={row.id}
-            />
+            {openDialog && (
+              <ProductDialog
+                open={openDialog}
+                closeDialog={closeDialog}
+                categoryName={categoryName}
+                categoryId={row.id}
+                productId={undefined}
+              />
+            )}
+
             <TableContainer component={Paper} elevation={10}>
               <Table size="small">
                 <TableHead>

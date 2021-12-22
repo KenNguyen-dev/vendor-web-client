@@ -16,8 +16,11 @@ import {
   Box,
   Switch,
   FormControlLabel,
-  Stack,
-  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  CircularProgress,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { SwitchProps } from "@mui/material/Switch";
@@ -33,6 +36,10 @@ import BuildIcon from "@mui/icons-material/Build";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import IDiscount from "./interfaces";
 import AddDiscountDialog from "../Dialog/AddDiscountDialog";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import { State } from "../../state/reducers";
+import { DISCOUNT_URL, ORDER_URL } from "../../url";
 
 interface TablePaginationActionsProps {
   count: number;
@@ -131,7 +138,7 @@ const TablePaginationActions = (props: TablePaginationActionsProps) => {
   );
 };
 
-const Row = (props: { row: IDiscount }) => {
+const Row = (props: { row: any }) => {
   const { row } = props;
   const [moreInfo, setMoreInfo] = useState(false);
   const [page, setPage] = useState(0);
@@ -145,6 +152,9 @@ const Row = (props: { row: IDiscount }) => {
     setActive(!active);
   };
 
+  const createdAt = new Date(row.createdAt).toLocaleString();
+  const updatedAt = new Date(row.updatedAt).toLocaleString();
+
   return (
     <Fragment>
       <TableRow>
@@ -153,7 +163,7 @@ const Row = (props: { row: IDiscount }) => {
         <TableCell>{row.priority}</TableCell>
         <TableCell>{row.allowedUses}</TableCell>
         <TableCell>{row.discountRule}</TableCell>
-        <TableCell>{row.product.length}</TableCell>
+        {/* <TableCell>{row.product.length}</TableCell> */}
         <TableCell>
           {active ? (
             <>
@@ -193,11 +203,11 @@ const Row = (props: { row: IDiscount }) => {
             <h4>Thông tin thêm:</h4>
             <p>Modifier: {row.modifier}</p>
             <p>Flat Amount: {row.isFlatAmount.toString().toUpperCase()}</p>
-            <p>Ngày bắt đầu: {row.startDate.toDateString()}</p>
-            <p>Ngày kết thúc: {row.endDate.toDateString()}</p>
+            <p>Ngày bắt đầu: {createdAt}</p>
+            <p>Ngày kết thúc: {updatedAt}</p>
           </Collapse>
         </TableCell>
-        <TableCell colSpan={6} style={{ paddingBottom: 0, paddingTop: 0 }}>
+        {/* <TableCell colSpan={6} style={{ paddingBottom: 0, paddingTop: 0 }}>
           <Collapse in={moreInfo} timeout="auto" unmountOnExit>
             <h3>Sản Phẩm</h3>
             <Table size="small">
@@ -214,7 +224,7 @@ const Row = (props: { row: IDiscount }) => {
                   .map((item) => {
                     return (
                       <TableRow>
-                        {/* Just a test Data */}
+                        
                         <TableCell>1</TableCell>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>
@@ -245,7 +255,7 @@ const Row = (props: { row: IDiscount }) => {
               </TableFooter>
             </Table>
           </Collapse>
-        </TableCell>
+        </TableCell> */}
       </TableRow>
       <TableRow>
         <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0 }}>
@@ -262,6 +272,11 @@ const Row = (props: { row: IDiscount }) => {
 const Discounts = () => {
   const [page, setPage] = useState(0);
   const [addDialog, setAddDialog] = useState(false);
+  const vendor: any = useSelector((state: State) => state.vendor);
+  const [vendorList, setVendorList] = useState<any>([]);
+  const [vendorSelected, setVendorSelected] = useState<string>("");
+  const [discount, setDiscount] = useState<any>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
   };
@@ -269,133 +284,7 @@ const Discounts = () => {
   const rowsPerPage = 5;
   const darkTheme = createTheme({ palette: { mode: "dark" } });
 
-  //test data
-  const mockData: IDiscount[] = [
-    {
-      id: "1",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: false,
-      product: [
-        {
-          name: "Product1",
-        },
-        {
-          name: "Product1",
-        },
-        {
-          name: "Product1",
-        },
-        {
-          name: "Product2",
-        },
-      ],
-    },
-    {
-      id: "1",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: true,
-      product: [
-        {
-          name: "Product1",
-        },
-      ],
-    },
-    {
-      id: "1",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: false,
-      product: [
-        {
-          name: "Product1",
-        },
-      ],
-    },
-    {
-      id: "1",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: false,
-      product: [
-        {
-          name: "Product1",
-        },
-      ],
-    },
-    {
-      id: "1",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: true,
-      product: [
-        {
-          name: "Product1",
-        },
-      ],
-    },
-    {
-      id: "2",
-      discountName: "Discount 1",
-      description:
-        "This is discount 1 dawdawdaxvdawdawdawfawffwadawdawdawdawdwadwadawdadawdwadawdaw",
-      priority: 1,
-      allowedUses: 5,
-      modifier: 1,
-      discountRule: 1,
-      startDate: new Date(2012, 20, 10),
-      endDate: new Date(2012, 20, 10),
-      isFlatAmount: true,
-      isActive: false,
-      product: [
-        {
-          name: "Product1",
-        },
-      ],
-    },
-  ];
-
+  //#region dialog
   const addNewDiscount = () => {
     setAddDialog(true);
   };
@@ -403,71 +292,136 @@ const Discounts = () => {
   const closeDialog = () => {
     setAddDialog(!addDialog);
   };
+  //#endregion
+
+  const getDiscountList = async () => {
+    if (vendorSelected == "") return;
+    setLoading(true);
+
+    const response = await axios.get(
+      `${DISCOUNT_URL}/${vendorSelected}/vendors`
+    );
+
+    const { data } = response;
+    setDiscount(data);
+    setLoading(false);
+  };
+
+  const getVendorInfo = () => {
+    setVendorList(vendor);
+  };
+
+  useEffect(() => {
+    getVendorInfo();
+  }, []);
+
+  useEffect(() => {
+    getDiscountList();
+  }, [vendorSelected]);
+
+  const handleVendorChange = (e: any) => {
+    setVendorSelected(e.target.value);
+  };
 
   return (
     <div id="header">
-      <h3>Danh Sách Discounts</h3>
-      <ThemeProvider theme={darkTheme}>
-        <AddDiscountDialog open={addDialog} closeDialog={closeDialog} />
-        <TableContainer component={Paper} elevation={10}>
-          <Table size="small">
-            <TableHead>
-              <TableCell>ID</TableCell>
-              <TableCell>Tên Discount</TableCell>
-              <TableCell>Ưu tiên</TableCell>
-              <TableCell>Số lần SD</TableCell>
-              <TableCell>Discount Rule</TableCell>
-              <TableCell>Sản Phẩm</TableCell>
-              <TableCell colSpan={2}>Trạng Thái</TableCell>
-            </TableHead>
-            <TableBody>
-              {mockData.length != 0 ? (
-                <Fragment>
-                  {mockData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
-                      <Row row={row} />
-                    ))}
-                  <TableRow>
-                    <TablePagination
-                      rowsPerPageOptions={[rowsPerPage]}
-                      //đổi mock data length
-                      count={mockData.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      SelectProps={{
-                        inputProps: {
-                          "aria-label": "rows per page",
-                        },
-                        native: true,
-                      }}
-                      onPageChange={handleChangePage}
-                      ActionsComponent={TablePaginationActions}
-                    />
-                  </TableRow>
-                </Fragment>
-              ) : (
-                <TableCell
-                  colSpan={8}
-                  sx={{ textAlign: "center", fontSize: "2vw" }}
-                >
-                  Vui lòng tạo discount mới <ArrowDownwardIcon id="arrowDown" />
-                </TableCell>
-              )}
-            </TableBody>
-            <TableFooter>
-              <TableCell colSpan={8} sx={{ textAlign: "center", padding: 0.5 }}>
-                <div id="outerBorder">
-                  <div id="innerBorder" onClick={() => addNewDiscount()}>
-                    <ControlPointIcon sx={{ fontSize: "1.5vw", pr: "5px" }} />
-                    Add new discount
-                  </div>
-                </div>
-              </TableCell>
-            </TableFooter>
-          </Table>
-        </TableContainer>
-      </ThemeProvider>
+      <strong>Danh Sách Discounts</strong>
+      <div id="body">
+        <p>
+          Vui lòng chọn Vendor:
+          <FormControl sx={{ width: 200 }} size="small">
+            <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              label="Vendor"
+              onChange={(e: any) => handleVendorChange(e)}
+            >
+              {vendorList.map((vendor: any) => (
+                <MenuItem value={vendor.id}>{vendor.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </p>
+      </div>
+      {loading ? (
+        <div style={{ textAlign: "center" }}>
+          <CircularProgress />
+        </div>
+      ) : (
+        vendorSelected != "" && (
+          <ThemeProvider theme={darkTheme}>
+            <AddDiscountDialog open={addDialog} closeDialog={closeDialog} />
+            <TableContainer component={Paper} elevation={10}>
+              <Table size="small">
+                <TableHead>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Tên Discount</TableCell>
+                  <TableCell>Ưu tiên</TableCell>
+                  <TableCell>Số lần SD</TableCell>
+                  <TableCell>Discount Rule</TableCell>
+                  <TableCell>Sản Phẩm</TableCell>
+                  <TableCell colSpan={2}>Trạng Thái</TableCell>
+                </TableHead>
+                <TableBody>
+                  {discount.length != 0 ? (
+                    <Fragment>
+                      {discount
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
+                        .map((row: any) => (
+                          <Row row={row} />
+                        ))}
+                      <TableRow>
+                        <TablePagination
+                          rowsPerPageOptions={[rowsPerPage]}
+                          //đổi mock data length
+                          count={discount.length}
+                          rowsPerPage={rowsPerPage}
+                          page={page}
+                          SelectProps={{
+                            inputProps: {
+                              "aria-label": "rows per page",
+                            },
+                            native: true,
+                          }}
+                          onPageChange={handleChangePage}
+                          ActionsComponent={TablePaginationActions}
+                        />
+                      </TableRow>
+                    </Fragment>
+                  ) : (
+                    <TableCell
+                      colSpan={8}
+                      sx={{ textAlign: "center", fontSize: "2vw" }}
+                    >
+                      Vui lòng tạo discount mới{" "}
+                      <ArrowDownwardIcon id="arrowDown" />
+                    </TableCell>
+                  )}
+                </TableBody>
+                <TableFooter>
+                  <TableCell
+                    colSpan={8}
+                    sx={{ textAlign: "center", padding: 0.5 }}
+                  >
+                    <div id="outerBorder">
+                      <div id="innerBorder" onClick={() => addNewDiscount()}>
+                        <ControlPointIcon
+                          sx={{ fontSize: "1.5vw", pr: "5px" }}
+                        />
+                        Add new discount
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableFooter>
+              </Table>
+            </TableContainer>
+          </ThemeProvider>
+        )
+      )}
     </div>
   );
 };

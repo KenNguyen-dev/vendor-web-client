@@ -35,6 +35,7 @@
   height: 30px;
   border-radius: 10px 10px 0px 0px;
   animation-duration: 3s;
+  cursor: pointer;
 }
 
 .imageBorder {

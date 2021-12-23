@@ -312,8 +312,8 @@ const Discounts = () => {
   };
 
   const getVendorList = () => {
-    // setVendorList(vendor.filter((v: any) => v.isActive === true));
-    setVendorList(vendor);
+    setVendorList(vendor.filter((v: any) => v.isActive === true));
+    //setVendorList(vendor);
   };
 
   useEffect(() => {

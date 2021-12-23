@@ -355,24 +355,32 @@ const Orders = () => {
   const [vendorSelected, setvendorSelected] = useState<string>("");
   const [orders, setOrders] = useState<any>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
 
-  const getVendorInfo = () => {
+  const getVendorList = () => {
+    // setVendorList(vendor.filter((v: any) => v.isActive === true));
     setVendorList(vendor);
   };
 
   const getOrderList = async () => {
     if (vendorSelected == "") return;
     setLoading(true);
-    const response = await axios.get(
-      `${ORDER_URL}?vendorId=${vendorSelected}&limit=10&offset=0`
-    );
-    setLoading(false);
-    const { data } = response.data;
-    setOrders(data);
+
+    await axios
+      .get(`${ORDER_URL}?vendorId=${vendorSelected}&limit=10&offset=0`)
+      .then((res) => {
+        const { data } = res.data;
+        setOrders(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        setError(true);
+      });
   };
 
   useEffect(() => {
-    getVendorInfo();
+    getVendorList();
   }, []);
 
   useEffect(() => {
@@ -386,7 +394,7 @@ const Orders = () => {
   const darkTheme = createTheme({ palette: { mode: "dark" } });
   return (
     <div id="header">
-      <strong>Danh sách orders:</strong>
+      <strong>Danh sách đơn hàng:</strong>
       <div id="body">
         <p>
           Vui lòng chọn Vendor:
@@ -409,7 +417,7 @@ const Orders = () => {
         <div style={{ textAlign: "center" }}>
           <CircularProgress />
         </div>
-      ) : (
+      ) : !error ? (
         orders.length != 0 && (
           <ThemeProvider theme={darkTheme}>
             <OrderDialog />
@@ -432,6 +440,10 @@ const Orders = () => {
             </TableContainer>
           </ThemeProvider>
         )
+      ) : (
+        <div style={{ textAlign: "center" }}>
+          <h3>Lỗi kết nối tới server</h3>
+        </div>
       )}
     </div>
   );

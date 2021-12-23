@@ -101,7 +101,9 @@ const ProductDialog = (props: any) => {
     formData.append("detailDescription", data.detailDescription);
 
     formData.append("files", image);
+
     //send formdata to backend
+    setLoading(true);
     const res = await axios({
       method: "post",
       url: PRODUCTS_URL,
@@ -112,7 +114,15 @@ const ProductDialog = (props: any) => {
           "Basic PEJhc2ljIEF1dGggVXNlcm5hbWU+OjxCYXNpYyBBdXRoIFBhc3N3b3JkPg==",
       },
     });
-    res.status === 201 ? props.closeDialog() : console.log(res.status);
+    if (res.status === 201 || res.status === 200) {
+      setLoading(false);
+      props.closeDialog();
+      alert("Thêm sản phẩm thành công");
+      window.location.reload();
+    } else {
+      setLoading(false);
+      console.log(res.status);
+    }
   };
 
   const getVendors = () => {
@@ -123,7 +133,6 @@ const ProductDialog = (props: any) => {
     setLoading(true);
     const { data } = await axios.get(`${PRODUCTS_URL}/${props.productId}`);
     setLoading(false);
-    console.log(data);
     setValues(data);
     setAttribute(data.attributes);
     data.attributes.forEach((element: any, index: number) => {
@@ -144,6 +153,7 @@ const ProductDialog = (props: any) => {
     setValue("price", values.price.amount);
     setValue("stock", values.stock);
     setValue("detailDescription", values.detailDescription);
+    register("categoryId", { value: props.categoryId });
   }, [values]);
 
   //#region Attribute
@@ -392,10 +402,9 @@ const ProductDialog = (props: any) => {
                             size="small"
                             disabled
                             value={props.categoryName}
-                            {...register("categoryId", {
-                              required: true,
-                              value: props.categoryId,
-                            })}
+                            // {...register("categoryId", {
+                            //   required: true,
+                            // })}
                           />
                         </ListItem>
                         <ListItem sx={{ pl: 4 }}>

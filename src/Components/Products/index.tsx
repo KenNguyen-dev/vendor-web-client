@@ -16,6 +16,10 @@ import {
   Button,
   TableFooter,
   Rating,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -29,6 +33,8 @@ import "./index.css";
 import axios from "axios";
 import { PRODUCTS_URL } from "../../url";
 import ProductDialog from "../Dialog/ProductDialog";
+import { useSelector } from "react-redux";
+import { State } from "../../state/reducers";
 
 interface IProducts {
   id: string;
@@ -156,8 +162,12 @@ const Products = (props: any) => {
   const { row } = props.location.state;
   const categoryName = row.name;
   const [products, setProducts] = useState<any>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const vendor: any = useSelector((state: State) => state.vendor);
+  const [vendorList, setVendorList] = useState<any>([]);
+  const [vendorSelected, setvendorSelected] = useState<string>("");
+  const [error, setError] = useState<boolean>(false);
 
   const addProduct = () => {
     setOpenDialog(!openDialog);
@@ -168,22 +178,37 @@ const Products = (props: any) => {
   };
 
   const getProducts = async () => {
+    if (vendorSelected == "" || vendorSelected == null) return;
+    setLoading(true);
     await axios
-      .get(`${PRODUCTS_URL}?limit=10&offset=0&categoryId=${row.id}&unit=vnd`)
+      .get(
+        `${PRODUCTS_URL}?limit=10&offset=0&categoryId=${row.id}&unit=vnd&brandId=${vendorSelected}`
+      )
       .then((res) => {
-        setProducts(res.data);
+        setProducts(res.data.data);
         setLoading(false);
       })
       .catch((err) => {
-        console.log(err);
         setLoading(false);
+        setError(true);
       });
   };
 
+  const handleVendorChange = (e: any) => {
+    setvendorSelected(e.target.value);
+  };
+
+  const getVendorList = () => {
+    setVendorList(vendor.filter((v: any) => v.isActive === true));
+  };
+
   useEffect(() => {
-    setLoading(true);
     getProducts();
-  }, [row]);
+  }, [vendorSelected, row]);
+
+  useEffect(() => {
+    getVendorList();
+  }, []);
 
   const logo = (url: string) => {
     return <img src={url} style={{ margin: "1px", width: 100, height: 100 }} />;
@@ -192,11 +217,31 @@ const Products = (props: any) => {
   const darkTheme = createTheme({ palette: { mode: "dark" } });
   return (
     <div>
+      <div id="header">
+        <strong>Danh sách sản phẩm : {row.name}</strong>
+        <div id="body">
+          <p>
+            Vui lòng chọn Vendor:
+            <FormControl sx={{ width: 200 }} size="small">
+              <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                label="Vendor"
+                onChange={(e: any) => handleVendorChange(e)}
+              >
+                {vendorList.map((vendor: any) => (
+                  <MenuItem value={vendor.id}>{vendor.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </p>
+        </div>
+      </div>
       {loading ? (
         <CircularProgress color="inherit" />
-      ) : (
-        <div id="header">
-          <strong>Danh sách sản phẩm : {row.name}</strong>
+      ) : !error ? (
+        products.length != 0 ? (
           <ThemeProvider theme={darkTheme}>
             {openDialog && (
               <ProductDialog
@@ -207,7 +252,6 @@ const Products = (props: any) => {
                 productId={undefined}
               />
             )}
-
             <TableContainer component={Paper} elevation={10}>
               <Table size="small">
                 <TableHead>
@@ -218,7 +262,7 @@ const Products = (props: any) => {
                   <TableCell>Thêm thông tin</TableCell>
                 </TableHead>
                 <TableBody>
-                  {products.data.map((row: any) => (
+                  {products.map((row: any) => (
                     <Row row={row} key={row.id} categoryName={categoryName} />
                   ))}
                 </TableBody>
@@ -240,6 +284,30 @@ const Products = (props: any) => {
               </Table>
             </TableContainer>
           </ThemeProvider>
+        ) : (
+          vendorSelected != "" && (
+            <div>
+              <ThemeProvider theme={darkTheme}>
+                {openDialog && (
+                  <ProductDialog
+                    open={openDialog}
+                    closeDialog={closeDialog}
+                    categoryName={categoryName}
+                    categoryId={row.id}
+                    productId={undefined}
+                  />
+                )}
+              </ThemeProvider>
+              <h3>Không có sản phẩm</h3>
+              <Button variant="contained" onClick={() => addProduct()}>
+                Thêm sản phẩm
+              </Button>
+            </div>
+          )
+        )
+      ) : (
+        <div style={{ textAlign: "center" }}>
+          <h3>Lỗi kết nối tới server</h3>
         </div>
       )}
     </div>

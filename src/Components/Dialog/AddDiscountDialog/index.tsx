@@ -127,6 +127,7 @@ const AddDiscountDialog = (props: any) => {
   const [productValues, setProductValues] =
     useState<IDiscountProducts | null>();
   const [categories, setCategories] = useState<any>([]);
+  const [categoryId, setCategoryId] = useState<string>("");
   const [products, setProducts] = useState<any>([]);
   const [disabled, setDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -157,6 +158,7 @@ const AddDiscountDialog = (props: any) => {
   };
 
   const addToList = () => {
+    if (productValues?.id == undefined) return;
     let duplicate = addedProducts.find(
       (p: IDiscountProducts) => p.id == productValues?.id
     );
@@ -193,6 +195,7 @@ const AddDiscountDialog = (props: any) => {
   const handleVendorChange = (event: any) => {
     const { value } = event.target;
     setVendorSelected(value);
+    setDisabled(false);
   };
 
   const getCategories = async () => {
@@ -207,19 +210,26 @@ const AddDiscountDialog = (props: any) => {
       });
   };
 
-  const getProducts = async (id: string) => {
-    setDisabled(false);
+  useEffect(() => {
+    getProducts();
+  }, [categoryId, vendorSelected]);
+
+  const getProducts = async () => {
+    if (categoryId == "" || vendorSelected == "") return;
     setLoading(true);
     await axios
-      .get(`${PRODUCTS_URL}?limit=10&offset=0&categoryId=${id}`)
+      .get(
+        `${PRODUCTS_URL}?limit=10&offset=0&categoryId=${categoryId}&brandId=${vendorSelected}`
+      )
       .then((response) => {
         const { data } = response.data;
         setProducts(data);
+        setLoading(false);
       })
       .catch((error) => {
         console.log(error);
+        setLoading(false);
       });
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -245,7 +255,11 @@ const AddDiscountDialog = (props: any) => {
     } else if (endDate < today) {
       alert("Ngày kết thúc không được bé hơn ngày hôm nay");
       return;
+    } else if (image == undefined || image == null) {
+      alert("Vui lòng chọn hình ảnh");
+      return;
     }
+
     const formData = new FormData();
     formData.append("vendorId", data.vendorId);
     formData.append("discountName", data.discountName);
@@ -267,28 +281,19 @@ const AddDiscountDialog = (props: any) => {
     });
 
     setFormLoading(true);
-    try {
-      const res = await axios.post(`${DISCOUNT_URL}`, formData);
-      if (res.status === 201 || res.status === 200) {
+    await axios
+      .post(`${DISCOUNT_URL}`, formData)
+      .then((res) => {
+        if (res.status === 201 || res.status === 200) {
+          setFormLoading(false);
+          alert("Tạo khuyến mãi thành công");
+          window.location.reload();
+        }
+      })
+      .catch((error) => {
         setFormLoading(false);
-        alert("Tạo thành công. Vui lòng tải lại trang");
-      }
-    } catch {
-      setFormLoading(false);
-      alert("Lỗi kết nối tới server");
-    }
-
-    // setIsLoading(true);
-    // const res = await axios.post(`${VENDOR_URL}`, formData);
-    // if (res.status === 201 || res.status === 200) {
-    //   setIsLoading(false);
-    //   alert("Tạo thành công. Vui lòng tải lại trang");
-    //   fetchVendor(user?.sub!);
-    // } else {
-    //   setIsLoading(false);
-    //   alert(res.data.message);
-    // }
-    //console.log(data);
+        alert("Lỗi kết nối tới server");
+      });
   };
 
   //#region upload image
@@ -573,12 +578,12 @@ const AddDiscountDialog = (props: any) => {
                         <div style={{ marginLeft: 70 }}>
                           <FormControl fullWidth sx={{ mb: 3 }}>
                             <InputLabel>Categories</InputLabel>
-                            <Select label="Categories">
+                            <Select label="Categories" disabled={disabled}>
                               {categories.map((category: any) => (
                                 <MenuItem
                                   key={category.id}
                                   value={category.id}
-                                  onClick={() => getProducts(category.id)}
+                                  onClick={() => setCategoryId(category.id)}
                                 >
                                   {category.name}
                                 </MenuItem>

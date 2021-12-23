@@ -277,6 +277,7 @@ const Discounts = () => {
   const [vendorSelected, setVendorSelected] = useState<string>("");
   const [discount, setDiscount] = useState<any>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
   };
@@ -297,22 +298,26 @@ const Discounts = () => {
   const getDiscountList = async () => {
     if (vendorSelected == "") return;
     setLoading(true);
-
-    const response = await axios.get(
-      `${DISCOUNT_URL}/${vendorSelected}/vendors`
-    );
-
-    const { data } = response;
-    setDiscount(data);
-    setLoading(false);
+    await axios
+      .get(`${DISCOUNT_URL}/${vendorSelected}/vendors`)
+      .then((res) => {
+        const { data } = res;
+        setDiscount(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        setError(true);
+      });
   };
 
-  const getVendorInfo = () => {
+  const getVendorList = () => {
+    // setVendorList(vendor.filter((v: any) => v.isActive === true));
     setVendorList(vendor);
   };
 
   useEffect(() => {
-    getVendorInfo();
+    getVendorList();
   }, []);
 
   useEffect(() => {
@@ -325,7 +330,7 @@ const Discounts = () => {
 
   return (
     <div id="header">
-      <strong>Danh Sách Discounts</strong>
+      <strong>Danh sách khuyến mãi</strong>
       <div id="body">
         <p>
           Vui lòng chọn Vendor:
@@ -348,7 +353,7 @@ const Discounts = () => {
         <div style={{ textAlign: "center" }}>
           <CircularProgress />
         </div>
-      ) : (
+      ) : !error ? (
         vendorSelected != "" && (
           <ThemeProvider theme={darkTheme}>
             <AddDiscountDialog open={addDialog} closeDialog={closeDialog} />
@@ -421,6 +426,10 @@ const Discounts = () => {
             </TableContainer>
           </ThemeProvider>
         )
+      ) : (
+        <div style={{ textAlign: "center" }}>
+          <h3>Lỗi kết nối tới server</h3>
+        </div>
       )}
     </div>
   );

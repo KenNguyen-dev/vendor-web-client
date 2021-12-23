@@ -13,10 +13,7 @@ import {
   IconButton,
 } from "@mui/material";
 import "./index.css";
-import StarIcon from "@mui/icons-material/Star";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RotateLeftIcon from "@mui/icons-material/RotateLeft";
-import { useAuth0 } from "@auth0/auth0-react";
 import axios from "axios";
 import { REVIEW_URL } from "../../url";
 import { useSelector } from "react-redux";
@@ -137,24 +134,32 @@ const ReviewSkeleton = () => {
 const Review = () => {
   const vendor: any = useSelector((state: State) => state.vendor);
   const [vendorList, setVendorList] = useState<any>([]);
-  const [vendorSelected, setvendorSelected] = useState<any>();
+  const [vendorSelected, setvendorSelected] = useState<any>("");
   const [reviews, setReviews] = useState<any>([]);
   const [ratingSort, setRatingSort] = useState<number>(0);
   const [initialReview, setInitialReview] = useState<any>([]);
+  const [error, setError] = useState<boolean>(false);
   const [loadingReview, setLoadingReview] = useState<boolean | null>(null);
 
   const getVendorInfo = () => {
-    setVendorList(vendor);
+    setVendorList(vendor.filter((v: any) => v.isActive === true));
   };
 
   const getUserReview = async () => {
-    const response = await axios.get(
-      `${REVIEW_URL}?limit=10&offset=0&targetId=${vendorSelected}`
-    );
-    const { data } = response.data;
-    setReviews(data);
-    setInitialReview(data);
-    setLoadingReview(false);
+    if (vendorSelected == "") return;
+    setLoadingReview(true);
+    await axios
+      .get(`${REVIEW_URL}?limit=10&offset=0&targetId=${vendorSelected}`)
+      .then((res) => {
+        const { data } = res.data;
+        setReviews(data);
+        setInitialReview(data);
+        setLoadingReview(false);
+      })
+      .catch((err) => {
+        setLoadingReview(false);
+        setError(true);
+      });
   };
 
   useEffect(() => {
@@ -166,8 +171,8 @@ const Review = () => {
   }, [vendorSelected]);
 
   const handleVendorChange = (event: any) => {
-    setLoadingReview(true);
     setvendorSelected(event.target.value);
+    setRatingSort(0);
   };
 
   //#region sort
@@ -196,6 +201,7 @@ const Review = () => {
 
   const resetReviews = () => {
     setReviews(initialReview);
+    setRatingSort(0);
   };
   //#endregion
 
@@ -222,49 +228,55 @@ const Review = () => {
           </FormControl>
         </p>
       </div>
-      {loadingReview ? null : (
-        <div className="filter">
-          <Typography component="legend">Lọc Rating</Typography>
-          <Stack direction="row" spacing={2}>
-            <Stack direction="row" spacing={0.5}>
-              <Button
-                variant="contained"
-                onClick={() => sortBestReview()}
-                sx={{ height: "25px", fontWeight: "bold" }}
-              >
-                Best
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => sortWorstReview()}
-                sx={{ height: "25px", fontWeight: "bold" }}
-              >
-                Worst
-              </Button>
-            </Stack>
-            <Stack direction="row" spacing={0.5}>
-              <Rating
-                value={ratingSort}
-                precision={0.5}
-                onChange={(e) => handleRatingSort(e)}
-              />
-              <IconButton
-                sx={{ padding: "0px" }}
-                onClick={() => resetReviews()}
-              >
-                <RotateLeftIcon sx={{ fontSize: "20px" }} />
-              </IconButton>
-            </Stack>
-          </Stack>
-        </div>
-      )}
-
       {loadingReview ? (
         <ReviewSkeleton />
+      ) : !error ? (
+        <div>
+          <div className="filter">
+            <Typography component="legend">Lọc Rating</Typography>
+            <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={0.5}>
+                <Button
+                  variant="contained"
+                  onClick={() => sortBestReview()}
+                  sx={{ height: "25px", fontWeight: "bold" }}
+                >
+                  Tốt nhất
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => sortWorstReview()}
+                  sx={{ height: "25px", fontWeight: "bold" }}
+                >
+                  Xấu nhất
+                </Button>
+              </Stack>
+              <Stack direction="row" spacing={0.5}>
+                <Rating
+                  value={ratingSort}
+                  precision={0.5}
+                  onChange={(e) => handleRatingSort(e)}
+                />
+                <IconButton
+                  sx={{ padding: "0px" }}
+                  onClick={() => resetReviews()}
+                >
+                  <RotateLeftIcon sx={{ fontSize: "20px" }} />
+                </IconButton>
+              </Stack>
+            </Stack>
+          </div>
+
+          <div>
+            {reviews.map((review: IReview) => {
+              return <UserReview review={review} />;
+            })}
+          </div>
+        </div>
       ) : (
-        reviews.map((review: IReview) => {
-          return <UserReview review={review} />;
-        })
+        <div style={{ textAlign: "center" }}>
+          <h3>Lỗi kết nối tới server</h3>
+        </div>
       )}
     </div>
   );

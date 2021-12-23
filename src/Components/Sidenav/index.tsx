@@ -321,6 +321,11 @@ const Sidenav = (props: any) => {
     setAnchorEl(null);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("state");
+    logout();
+  };
+
   const dropdownMenu = (
     <Menu
       id="basic-menu"
@@ -333,7 +338,7 @@ const Sidenav = (props: any) => {
     >
       <MenuItem>{user?.name}</MenuItem>
       <Divider />
-      <MenuItem onClick={() => logout()}>Logout</MenuItem>
+      <MenuItem onClick={() => handleLogout()}>Logout</MenuItem>
     </Menu>
   );
   //#endregion

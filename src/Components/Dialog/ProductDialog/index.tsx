@@ -104,25 +104,35 @@ const ProductDialog = (props: any) => {
 
     //send formdata to backend
     setLoading(true);
-    const res = await axios({
-      method: "post",
-      url: PRODUCTS_URL,
-      data: formData,
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization:
-          "Basic PEJhc2ljIEF1dGggVXNlcm5hbWU+OjxCYXNpYyBBdXRoIFBhc3N3b3JkPg==",
-      },
-    });
-    if (res.status === 201 || res.status === 200) {
-      setLoading(false);
-      props.closeDialog();
-      alert("Thêm sản phẩm thành công");
-      window.location.reload();
-    } else {
-      setLoading(false);
-      console.log(res.status);
-    }
+
+    // const res = await axios({
+    //   method: "post",
+    //   url: PRODUCTS_URL,
+    //   data: formData,
+    // });
+    // if (res.status === 201 || res.status === 200) {
+    //   setLoading(false);
+    //   props.closeDialog();
+    //   alert("Thêm sản phẩm thành công");
+    //   window.location.reload();
+    // } else {
+    //   setLoading(false);
+    //   console.log(res.status);
+    // }
+    await axios
+      .post(`${PRODUCTS_URL}`, formData)
+      .then((res) => {
+        if (res.status === 201 || res.status === 200) {
+          setLoading(false);
+          props.closeDialog();
+          alert("Thêm sản phẩm thành công");
+          window.location.reload();
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        alert("Lỗi kết nối tới server");
+      });
   };
 
   const getVendors = () => {

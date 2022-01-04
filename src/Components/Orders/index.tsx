@@ -279,7 +279,6 @@ const Row = (props: { row: any }) => {
                   <TableCell>Giá</TableCell>
                   <TableCell>Tổng Tiền</TableCell>
                   <TableCell>Thương Hiệu</TableCell>
-                  <TableCell>Ảnh Minh Họa</TableCell>
                   <TableCell>Xóa</TableCell>
                 </TableHead>
                 <TableBody>
@@ -298,7 +297,6 @@ const Row = (props: { row: any }) => {
                             {item.totalPrice}/{item.priceUnit}
                           </TableCell>
                           <TableCell>{row.vendor.name}</TableCell>
-                          <TableCell>{item.product.imageUrl}</TableCell>
                           <TableCell>
                             <IconButton>
                               <DeleteForeverIcon />

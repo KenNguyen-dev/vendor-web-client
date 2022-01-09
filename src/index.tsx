@@ -7,8 +7,8 @@ import { Provider } from "react-redux";
 import { store } from "./state";
 import { Auth0Provider } from "@auth0/auth0-react";
 
-const domain: any = "dev-5rrna-f6.us.auth0.com";
-const clientId: any = "MjiJGbneky2bibr3AwvwcKEUWqntCFjt";
+const domain: any = process.env.REACT_APP_AUTH0_DOMAIN;
+const clientId: any = process.env.REACT_APP_AUTH0_CLIENT_ID;
 
 ReactDOM.render(
   <React.StrictMode>
